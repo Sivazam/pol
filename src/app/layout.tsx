@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Polavaram Project — Rehabilitation & Resettlement Portal",
-  description: "Government of Andhra Pradesh — Polavaram Irrigation Project Rehabilitation and Resettlement Tracking Portal. Monitoring 14,000+ families across 3 mandals and 30 villages.",
+  description: "Government of Andhra Pradesh — Polavaram Irrigation Project Rehabilitation and Resettlement Tracking Portal. Monitoring 13,961 families across 3 mandals and 30 villages.",
   keywords: ["Polavaram", "Rehabilitation", "Resettlement", "Andhra Pradesh", "Godavari", "Irrigation"],
 };
 

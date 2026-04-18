@@ -226,9 +226,13 @@ function getSesStatus(globalIndex: number): string {
 }
 
 // First Scheme Eligible: exactly 9,663 out of 13,961 (~69.2%)
-// We mark the first 9663 families (by global index) as eligible
+// Distributed proportionally across all mandals (Bresenham-like approach)
+// This ensures each mandal gets a fair share, not just the first ones
+const TOTAL_FAMILIES_TARGET = 13961;
+const FIRST_SCHEME_TARGET = 9663;
 function isFirstSchemeEligible(globalIndex: number): boolean {
-  return globalIndex < 9663;
+  return Math.floor(((globalIndex + 1) * FIRST_SCHEME_TARGET) / TOTAL_FAMILIES_TARGET) >
+         Math.floor((globalIndex * FIRST_SCHEME_TARGET) / TOTAL_FAMILIES_TARGET);
 }
 
 // ═══════════════════════════════════════════════════════════════════════

@@ -4,11 +4,11 @@ import React, { useState } from 'react';
 import { X, Bell } from 'lucide-react';
 
 const ANNOUNCEMENTS = [
-  '📢 SES verification drive ongoing in VR Puram Mandal — 2,450 families pending verification',
-  '📋 New plot allotments announced for Chintoor villages — check status now',
-  '✅ 1,847 families have received plot possession as of today',
+  '📢 SES verification drive ongoing across all 3 mandals — families pending verification',
+  '📋 New plot allotments announced for rehabilitation colonies — check status now',
+  '✅ Plot possession process continues for approved families across all mandals',
   '🏛️ Polavaram R&R Portal — Official portal of Government of Andhra Pradesh',
-  '📊 Rehabilitation progress updated — 18% of families now resettled across 3 mandals',
+  '📊 Rehabilitation progress updated — 13,961 families tracked across 3 mandals and 30 villages',
 ];
 
 export default function NotificationBanner() {
