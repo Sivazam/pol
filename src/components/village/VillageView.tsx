@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import { SES_STATUS_CONFIG } from '@/lib/constants';
 import CountUp from 'react-countup';
@@ -8,7 +8,8 @@ import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import {
   ChevronLeft, ChevronRight, Activity, Search, Filter,
-  Users, Star, MapPin, X, LandPlot, Home,
+  Users, Star, MapPin, X, LandPlot, Home, CheckCircle2,
+  Clock, ArrowUpDown,
 } from 'lucide-react';
 import GlobalSearch from '@/components/shared/GlobalSearch';
 import Breadcrumb from '@/components/shared/Breadcrumb';
@@ -39,6 +40,14 @@ interface VillageInfo {
   mandal: { name: string; color: string };
 }
 
+// Status colors for left border
+const STATUS_BORDER_COLORS: Record<string, string> = {
+  APPROVED: 'border-l-green-600',
+  VERIFIED: 'border-l-amber-500',
+  SURVEYED: 'border-l-slate-400',
+  REJECTED: 'border-l-red-600',
+};
+
 export default function VillageView() {
   const selectedVillageId = useAppStore((s) => s.selectedVillageId);
   const navigateToFamily = useAppStore((s) => s.navigateToFamily);
@@ -51,6 +60,7 @@ export default function VillageView() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [sesFilter, setSesFilter] = useState('');
+  const [sortBy, setSortBy] = useState('pdfNumber');
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const limit = 20;
@@ -87,6 +97,7 @@ export default function VillageView() {
     });
     if (search) params.set('search', search);
     if (sesFilter) params.set('sesStatus', sesFilter);
+    if (sortBy) params.set('sortBy', sortBy);
 
     fetch(`/api/families?${params}`)
       .then(r => r.json())
@@ -98,7 +109,7 @@ export default function VillageView() {
       })
       .catch(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [selectedVillageId, page, search, sesFilter]);
+  }, [selectedVillageId, page, search, sesFilter, sortBy]);
 
   // GSAP entrance animation
   useEffect(() => {
@@ -123,6 +134,18 @@ export default function VillageView() {
         config: SES_STATUS_CONFIG[key] || SES_STATUS_CONFIG.SURVEYED,
       }))
     : [];
+
+  // Compute avg family size from current page families
+  const avgFamilySize = useMemo(() => {
+    if (families.length === 0) return 0;
+    const totalMembers = families.reduce((sum, f) => sum + f.memberCount, 0);
+    return (totalMembers / families.length).toFixed(1);
+  }, [families]);
+
+  // Pending plots count (families without APPROVED status)
+  const pendingPlots = useMemo(() => {
+    return families.filter(f => f.sesStatus !== 'APPROVED').length;
+  }, [families]);
 
   // Loading state
   if (loading && families.length === 0) {
@@ -241,6 +264,50 @@ export default function VillageView() {
           )}
         </div>
 
+        {/* Stats Summary Cards Row */}
+        <div className="anim-in opacity-0 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="gov-card p-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[#0F2B46]/10 flex items-center justify-center">
+              <Users className="w-5 h-5 text-[#0F2B46]" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-slate-900">
+                <CountUp end={total} duration={1.2} separator="," />
+              </p>
+              <p className="text-xs text-slate-500">Total Families</p>
+            </div>
+          </div>
+          <div className="gov-card p-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-green-700">
+                <CountUp end={village?.firstSchemeCount || 0} duration={1.2} separator="," />
+              </p>
+              <p className="text-xs text-slate-500">First Scheme Eligible</p>
+            </div>
+          </div>
+          <div className="gov-card p-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
+              <Users className="w-5 h-5 text-teal-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-teal-700">{avgFamilySize}</p>
+              <p className="text-xs text-slate-500">Avg. Family Size</p>
+            </div>
+          </div>
+          <div className="gov-card p-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-orange-700">{pendingPlots}</p>
+              <p className="text-xs text-slate-500">Pending Plots</p>
+            </div>
+          </div>
+        </div>
+
         {/* Search & Filter Bar */}
         <div className="anim-in opacity-0 flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -275,6 +342,39 @@ export default function VillageView() {
               <option value="REJECTED">Rejected</option>
             </select>
           </div>
+          <div className="relative">
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <select
+              value={sortBy}
+              onChange={e => { setSortBy(e.target.value); setPage(1); setLoading(true); }}
+              className="pl-10 pr-8 py-2.5 bg-white border border-[#CBD5E1] rounded-lg text-sm text-slate-900 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all shadow-sm"
+            >
+              <option value="pdfNumber">Sort by PDF Number</option>
+              <option value="headName">Sort by Name</option>
+              <option value="sesStatus">Sort by Status</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Family Count Summary Bar */}
+        <div className="anim-in opacity-0 flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-4 py-2">
+          <p className="text-xs text-slate-500">
+            Showing <span className="font-semibold text-slate-700">{families.length}</span> of <span className="font-semibold text-slate-700">{total}</span> families
+          </p>
+          {sesFilter && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Filtered by:</span>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded border ${SES_STATUS_CONFIG[sesFilter]?.color || ''} ${SES_STATUS_CONFIG[sesFilter]?.bg || ''} ${SES_STATUS_CONFIG[sesFilter]?.border || ''}`}>
+                {SES_STATUS_CONFIG[sesFilter]?.label || sesFilter}
+              </span>
+              <button
+                onClick={() => { setSesFilter(''); setPage(1); setLoading(true); }}
+                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Family Grid */}
@@ -290,6 +390,7 @@ export default function VillageView() {
         >
           {families.map((f) => {
             const statusCfg = SES_STATUS_CONFIG[f.sesStatus] || SES_STATUS_CONFIG.SURVEYED;
+            const borderColor = STATUS_BORDER_COLORS[f.sesStatus] || 'border-l-slate-300';
             return (
               <motion.div
                 key={f.id}
@@ -298,7 +399,7 @@ export default function VillageView() {
                   visible: { opacity: 1, y: 0 },
                 }}
                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="gov-card p-4 cursor-pointer group"
+                className={`gov-card p-4 cursor-pointer group border-l-4 ${borderColor} hover:scale-[1.01] transition-all duration-200`}
                 onClick={() => navigateToFamily(f.pdfNumber, f.id)}
               >
                 {/* PDF Badge & Star */}

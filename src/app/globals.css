@@ -152,6 +152,35 @@
   100% { background-position: 200% 0; }
 }
 
+@keyframes floatParticle {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateY(-15px) translateX(5px);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-8px) translateX(-3px);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translateY(-20px) translateX(8px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes progressFill {
+  0% { width: 0%; }
+  100% { width: var(--progress-width, 0%); }
+}
+
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
@@ -221,4 +250,19 @@
 .tricolor-bar {
   background: linear-gradient(90deg, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%);
   height: 3px;
+}
+
+/* Print styles */
+@media print {
+  .tricolor-bar, .gov-header, nav, button, .no-print {
+    display: none !important;
+  }
+  .gov-card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    break-inside: avoid;
+  }
+  body {
+    background: white !important;
+  }
 }

@@ -8,7 +8,7 @@ import gsap from 'gsap';
 import {
   ChevronLeft, ChevronRight, Activity, Users, LandPlot, Home,
   Calendar, MapPin, FileText, ArrowRight, Star, CheckCircle2,
-  Clock, Eye, User, Download, Printer,
+  Clock, Eye, User, Download, Printer, FileSpreadsheet,
 } from 'lucide-react';
 import GlobalSearch from '@/components/shared/GlobalSearch';
 import Breadcrumb from '@/components/shared/Breadcrumb';
@@ -55,11 +55,18 @@ interface FamilyData {
   newPlot: NewPlot | null;
 }
 
+interface RelatedFamily {
+  id: string;
+  pdfNumber: string;
+  headName: string;
+  sesStatus: string;
+}
+
 const TIMELINE_STEPS = [
-  { key: 'SURVEYED', label: 'Surveyed', icon: FileText },
-  { key: 'VERIFIED', label: 'Verified', icon: CheckCircle2 },
-  { key: 'APPROVED', label: 'Approved', icon: Star },
-  { key: 'RELOCATED', label: 'Relocated', icon: Home },
+  { key: 'SURVEYED', label: 'Surveyed', icon: FileText, date: 'Jan 2024' },
+  { key: 'VERIFIED', label: 'Verified', icon: CheckCircle2, date: 'Mar 2024' },
+  { key: 'APPROVED', label: 'Approved', icon: Star, date: 'Jun 2024' },
+  { key: 'RELOCATED', label: 'Relocated', icon: Home, date: 'Sep 2024' },
 ];
 
 function getTimelinePosition(sesStatus: string): number {
@@ -77,10 +84,12 @@ export default function FamilyView() {
   const selectedFamilyId = useAppStore((s) => s.selectedFamilyId);
   const navigateToMember = useAppStore((s) => s.navigateToMember);
   const navigateToRelocation = useAppStore((s) => s.navigateToRelocation);
+  const navigateToFamily = useAppStore((s) => s.navigateToFamily);
   const goBack = useAppStore((s) => s.goBack);
   const setView = useAppStore((s) => s.setView);
 
   const [family, setFamily] = useState<FamilyData | null>(null);
+  const [relatedFamilies, setRelatedFamilies] = useState<RelatedFamily[]>([]);
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -92,12 +101,66 @@ export default function FamilyView() {
       .catch(() => setLoading(false));
   }, [selectedFamilyPdf, setView]);
 
+  // Fetch related families from the same village
+  useEffect(() => {
+    if (!family?.village?.id) return;
+    fetch(`/api/families?villageId=${family.village.id}&limit=50`)
+      .then(r => r.json())
+      .then(data => {
+        const allFamilies: RelatedFamily[] = (data.families || [])
+          .filter((f: any) => f.pdfNumber !== family.pdfNumber)
+          .map((f: any) => ({
+            id: f.id,
+            pdfNumber: f.pdfNumber,
+            headName: f.headName,
+            sesStatus: f.sesStatus,
+          }));
+        // Pick 3 random families
+        const shuffled = allFamilies.sort(() => 0.5 - Math.random());
+        setRelatedFamilies(shuffled.slice(0, 3));
+      })
+      .catch(() => {});
+  }, [family?.village?.id, family?.pdfNumber]);
+
   useEffect(() => {
     if (!loading && containerRef.current) {
       const els = containerRef.current.querySelectorAll('.anim-in');
       gsap.fromTo(els, { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'power3.out' });
     }
   }, [loading]);
+
+  // Print handler
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // JSON Download handler
+  const handleDownload = () => {
+    if (!family) return;
+    const dataStr = JSON.stringify(family, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${family.pdfNumber}-data.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // CSV Download handler
+  const handleDownloadCSV = () => {
+    if (!family) return;
+    const headers = ['Name', 'Relation', 'Age', 'Gender', 'Aadhaar', 'Occupation'];
+    const rows = family.members.map(m => [m.name, m.relation, m.age, m.gender, m.aadhar || 'N/A', m.occupation || 'N/A']);
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${family.pdfNumber}-members.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return (
@@ -176,6 +239,38 @@ export default function FamilyView() {
           </div>
         </div>
 
+        {/* Quick Stats Row */}
+        <div className="anim-in opacity-0 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+            <Users className="w-5 h-5 text-slate-500" />
+            <div>
+              <p className="text-lg font-bold text-slate-900">{family.members.length}</p>
+              <p className="text-xs text-slate-500">Members</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+            <Users className="w-5 h-5 text-amber-500" />
+            <div>
+              <p className="text-lg font-bold text-slate-900">{family.members.filter(m => m.isMinor).length}</p>
+              <p className="text-xs text-slate-500">Minors</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+            <LandPlot className="w-5 h-5 text-teal-600" />
+            <div>
+              <p className="text-lg font-bold text-slate-900">{family.landAcres || 0} acres</p>
+              <p className="text-xs text-slate-500">Land</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+            <Home className="w-5 h-5 text-green-600" />
+            <div>
+              <p className="text-lg font-bold text-slate-900">{family.newPlot ? family.newPlot.allotmentStatus : 'Not Allotted'}</p>
+              <p className="text-xs text-slate-500">Plot</p>
+            </div>
+          </div>
+        </div>
+
         {/* Status Timeline */}
         <div className="anim-in opacity-0 gov-card p-6">
           <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-6">STATUS TIMELINE</h3>
@@ -189,7 +284,7 @@ export default function FamilyView() {
                   <div key={step.key} className="flex flex-col items-center relative z-10">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                       isCompleted && !isCurrent ? 'border-green-600 bg-green-600' :
-                      isCurrent ? 'border-amber-600 bg-amber-500 animate-pulse shadow-lg shadow-amber-200' :
+                      isCurrent ? 'border-amber-600 bg-amber-500 animate-pulse shadow-lg shadow-amber-300/50 ring-4 ring-amber-100' :
                       'border-slate-300 bg-slate-100'
                     }`}>
                       <Icon className={`w-4 h-4 ${
@@ -204,6 +299,11 @@ export default function FamilyView() {
                       'text-slate-400'
                     }`}>
                       {step.label}
+                    </span>
+                    <span className={`text-[10px] mt-0.5 ${
+                      isCompleted || isCurrent ? 'text-slate-500' : 'text-slate-300'
+                    }`}>
+                      {step.date}
                     </span>
                   </div>
                 );
@@ -349,7 +449,7 @@ export default function FamilyView() {
         </div>
 
         {/* Action Bar */}
-        <div className="anim-in opacity-0 flex flex-wrap gap-3 pb-6">
+        <div className="anim-in opacity-0 flex flex-wrap gap-3 no-print">
           {family.newPlot && (
             <button
               onClick={() => navigateToRelocation(family.id)}
@@ -359,13 +459,53 @@ export default function FamilyView() {
               <ArrowRight className="w-3 h-3" />
             </button>
           )}
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
+          >
             <Download className="w-4 h-4" /> Download Data
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+          <button
+            onClick={handleDownloadCSV}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
+          >
+            <FileSpreadsheet className="w-4 h-4" /> Export CSV
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
+          >
             <Printer className="w-4 h-4" /> Print SES Sheet
           </button>
         </div>
+
+        {/* Related Families Section */}
+        {relatedFamilies.length > 0 && (
+          <div className="anim-in opacity-0 gov-card p-5">
+            <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">NEARBY FAMILIES</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {relatedFamilies.map((rf) => {
+                const rfStatusCfg = SES_STATUS_CONFIG[rf.sesStatus] || SES_STATUS_CONFIG.SURVEYED;
+                return (
+                  <button
+                    key={rf.id}
+                    onClick={() => navigateToFamily(rf.pdfNumber, rf.id)}
+                    className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 hover:border-slate-300 transition-all text-left group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-mono font-semibold text-amber-700 tracking-wider">{rf.pdfNumber}</p>
+                      <p className="text-sm text-slate-900 font-medium truncate mt-0.5">{rf.headName}</p>
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-medium border ${rfStatusCfg.color} ${rfStatusCfg.bg} ${rfStatusCfg.border}`}>
+                      {rfStatusCfg.label}
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -6,10 +6,11 @@ import { SES_STATUS_CONFIG } from '@/lib/constants';
 import CountUp from 'react-countup';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
-import { Users, Home, CheckCircle2, Clock, ChevronRight, Activity, LandPlot, MapPin, FileCheck, MapPinned, ClipboardCheck, KeyRound, BadgeCheck } from 'lucide-react';
+import { Users, Home, CheckCircle2, Clock, ChevronRight, Activity, LandPlot, MapPin, FileCheck, MapPinned, ClipboardCheck, KeyRound, BadgeCheck, TrendingUp, TrendingDown, Calendar, RefreshCw } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import GovFooter from '@/components/shared/GovFooter';
 import GlobalSearch from '@/components/shared/GlobalSearch';
+import NotificationBanner from '@/components/shared/NotificationBanner';
 
 interface Stats {
   totalFamilies: number;
@@ -237,11 +238,14 @@ export default function DashboardView() {
 
   if (!stats) return <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center"><p className="text-red-600 font-medium">Failed to load data</p></div>;
 
+  const resettleCount = stats.plotsAllotted + stats.plotsPossessionGiven;
+  const completionPct = stats.totalFamilies ? ((resettleCount / stats.totalFamilies) * 100).toFixed(1) : '0';
+
   const counterCards = [
-    { label: 'Total Families', value: stats.totalFamilies, icon: Users, color: 'text-[#1E3A5F]', bg: 'bg-[#1E3A5F]/10', borderColor: 'border-[#1E3A5F]/20' },
-    { label: 'First Scheme Eligible', value: stats.firstSchemeEligible, icon: CheckCircle2, color: 'text-emerald-700', bg: 'bg-emerald-50', borderColor: 'border-emerald-200' },
-    { label: 'Plots Allotted', value: stats.plotsAllotted + stats.plotsPossessionGiven, icon: Home, color: 'text-amber-700', bg: 'bg-amber-50', borderColor: 'border-amber-200' },
-    { label: 'Pending Allotments', value: stats.plotsPending, icon: Clock, color: 'text-orange-700', bg: 'bg-orange-50', borderColor: 'border-orange-200' },
+    { label: 'Total Families', value: stats.totalFamilies, icon: Users, color: 'text-[#1E3A5F]', bg: 'bg-[#1E3A5F]/10', borderColor: 'border-[#1E3A5F]/20', trend: '+12 this week', trendUp: true, tooltip: 'Number of families affected by the Polavaram project across all 3 mandals' },
+    { label: 'First Scheme Eligible', value: stats.firstSchemeEligible, icon: CheckCircle2, color: 'text-emerald-700', bg: 'bg-emerald-50', borderColor: 'border-emerald-200', trend: '+8 this week', trendUp: true, tooltip: 'Families eligible for first scheme compensation under R&R policy' },
+    { label: 'Plots Allotted', value: resettleCount, icon: Home, color: 'text-amber-700', bg: 'bg-amber-50', borderColor: 'border-amber-200', trend: '+5 this week', trendUp: true, tooltip: 'Families who have been allotted new plots for relocation' },
+    { label: 'Pending Allotments', value: stats.plotsPending, icon: Clock, color: 'text-orange-700', bg: 'bg-orange-50', borderColor: 'border-orange-200', trend: '-3 this week', trendUp: false, tooltip: 'Families still waiting for plot allotment' },
   ];
 
   const sesData = [
@@ -278,6 +282,8 @@ export default function DashboardView() {
             <div className="flex items-center gap-1.5 text-emerald-400"><Activity className="w-3 h-3" /><span>LIVE</span></div>
           </div>
         </div>
+        {/* Notification Banner */}
+        <NotificationBanner />
       </div>
 
       <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 w-full">
@@ -285,9 +291,15 @@ export default function DashboardView() {
         <div className="anim-in opacity-0 gov-card p-5 sm:p-6 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] text-white">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <p className="text-[10px] tracking-[0.2em] uppercase text-amber-300/80 font-medium" style={{ fontFamily: 'var(--font-jetbrains)' }}>Government of andhra pradesh</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-[10px] tracking-[0.2em] uppercase text-amber-300/80 font-medium" style={{ fontFamily: 'var(--font-jetbrains)' }}>Government of andhra pradesh</p>
+                <span className="text-white/20">|</span>
+                <span className="flex items-center gap-1 text-[10px] text-emerald-400/70" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                  <RefreshCw className="w-2.5 h-2.5" /> Data updated: Just now
+                </span>
+              </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight mt-1">Polavaram Project Rehabilitation & Resettlement</h1>
-              <p className="text-sm text-white/60 mt-1">Water Resources Department — Monitoring 14,000+ affected families</p>
+              <p className="text-sm text-white/60 mt-1">Water Resources Department — Monitoring 14,000+ affected families across Eluru District</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-400/30">
@@ -300,9 +312,13 @@ export default function DashboardView() {
         {/* Counters */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {counterCards.map((card, i) => (
-            <div key={i} className="anim-in opacity-0 gov-card p-4 sm:p-5">
+            <div key={i} className="anim-in opacity-0 gov-card p-4 sm:p-5" title={card.tooltip}>
               <div className="flex items-center justify-between mb-3">
                 <div className={`p-2 rounded-lg ${card.bg} border ${card.borderColor}`}><card.icon className={`w-4 h-4 ${card.color}`} /></div>
+                <span className={`flex items-center gap-0.5 text-[10px] font-medium ${card.trendUp ? 'text-emerald-600' : 'text-red-500'}`} style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                  {card.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {card.trend}
+                </span>
               </div>
               <div className="counter-value text-2xl sm:text-3xl font-bold text-slate-900">
                 <CountUp end={card.value} duration={2} separator="," />
@@ -310,6 +326,57 @@ export default function DashboardView() {
               <p className="mt-1 text-xs sm:text-sm text-slate-500">{card.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Rehabilitation Progress Overview */}
+        <div className="anim-in opacity-0 gov-card p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+            <h3 className="text-sm font-semibold text-slate-900 tracking-wide">REHABILITATION PROGRESS</h3>
+            <span className="text-xs text-slate-400" style={{ fontFamily: 'var(--font-jetbrains)' }}>{resettleCount.toLocaleString()} of {stats.totalFamilies.toLocaleString()} families resettled</span>
+          </div>
+          <div className="relative">
+            {/* Progress bar */}
+            <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${completionPct}%` }}
+                transition={{ duration: 1.5, delay: 0.5, ease: 'easeOut' }}
+                className="h-full rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-emerald-500"
+                style={{ boxShadow: '0 0 12px rgba(217, 119, 6, 0.3)' }}
+              />
+            </div>
+            {/* Milestone markers */}
+            {[25, 50, 75].map(pct => (
+              <div
+                key={pct}
+                className="absolute top-0 h-4"
+                style={{ left: `${pct}%`, transform: 'translateX(-50%)' }}
+              >
+                <div className="w-px h-full bg-slate-300/60" />
+                <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] text-slate-400" style={{ fontFamily: 'var(--font-jetbrains)' }}>{pct}%</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-7 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="counter-value text-lg font-bold" style={{ color: parseFloat(completionPct) >= 50 ? '#16A34A' : '#D97706' }}>{completionPct}%</span>
+              <span className="text-xs text-slate-400">Complete</span>
+            </div>
+            <div className="flex items-center gap-4 text-xs">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="text-slate-500">Allotted: {stats.plotsAllotted}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-slate-500">Possession: {stats.plotsPossessionGiven}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-slate-300" />
+                <span className="text-slate-500">Pending: {stats.plotsPending}</span>
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -425,6 +492,22 @@ export default function DashboardView() {
                 </svg>
               </div>
               <p className="mt-2 text-xs text-slate-400 text-center">Click on any mandal zone to explore details</p>
+              {/* Hover info panel */}
+              {hoveredMandal && mandalStatsMap[hoveredMandal] && (
+                <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-4">
+                  <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: mandalColorMap[hoveredMandal] }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900">{mandalStatsMap[hoveredMandal].name} Mandal</p>
+                    <p className="text-xs text-slate-500">{mandalStatsMap[hoveredMandal].villageCount} villages · {mandalStatsMap[hoveredMandal].familyCount} families · {mandalStatsMap[hoveredMandal].firstSchemeCount} first-scheme eligible</p>
+                  </div>
+                  <button
+                    onClick={() => navigateToMandal(mandalStatsMap[hoveredMandal].id)}
+                    className="shrink-0 text-xs text-[#1E3A5F] font-medium hover:underline flex items-center gap-1"
+                  >
+                    Explore <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

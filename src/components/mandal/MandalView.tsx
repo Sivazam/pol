@@ -7,10 +7,12 @@ import CountUp from 'react-countup';
 import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import {
-  ChevronRight, ChevronLeft, Activity, MapPin, Users, Home, CheckCircle2,
+  ChevronRight, ChevronLeft, Activity, MapPin, Users, Home, CheckCircle2, Download,
 } from 'lucide-react';
 import GlobalSearch from '@/components/shared/GlobalSearch';
 import Breadcrumb from '@/components/shared/Breadcrumb';
+import NotificationBanner from '@/components/shared/NotificationBanner';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 /* ------------------------------------------------------------------ */
 /*  SES hex color map for inline styles (light theme)                  */
@@ -245,6 +247,7 @@ export default function MandalView() {
             <div className="flex items-center gap-1.5 text-emerald-400"><Activity className="w-3 h-3" /><span>LIVE</span></div>
           </div>
         </div>
+        <NotificationBanner />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><Breadcrumb /></div>
@@ -485,6 +488,48 @@ export default function MandalView() {
 
           {/* Stats Section */}
           <div className="space-y-4">
+            {/* SES Composition Chart */}
+            <div className="anim-in opacity-0 gov-card p-4 sm:p-5">
+              <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">VILLAGE SES COMPOSITION</h3>
+              <div className="w-full" style={{ height: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={villages.map(v => ({ name: v.name, ...v.statusBreakdown }))} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                    <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#64748B' }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} interval={0} angle={-30} textAnchor="end" height={50} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload) return null;
+                        return (
+                          <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-lg">
+                            <p className="text-xs font-semibold text-slate-900 mb-1">{label}</p>
+                            {payload.map((entry, i) => (
+                              <p key={i} className="text-[10px] text-slate-600">
+                                <span className="inline-block w-2 h-2 rounded-sm mr-1.5" style={{ backgroundColor: entry.color }} />
+                                {String(entry.name)}: <span className="font-medium text-slate-800">{String(entry.value)}</span>
+                              </p>
+                            ))}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="SURVEYED" stackId="a" fill="#94A3B8" radius={[0, 0, 0, 0]} barSize={24} name="Surveyed" />
+                    <Bar dataKey="VERIFIED" stackId="a" fill="#D97706" radius={[0, 0, 0, 0]} barSize={24} name="Verified" />
+                    <Bar dataKey="APPROVED" stackId="a" fill="#16A34A" radius={[0, 0, 0, 0]} barSize={24} name="Approved" />
+                    <Bar dataKey="REJECTED" stackId="a" fill="#DC2626" radius={[0, 4, 4, 0]} barSize={24} name="Rejected" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex items-center justify-center gap-3 mt-1">
+                {[{ label: 'Surveyed', color: '#94A3B8' }, { label: 'Verified', color: '#D97706' }, { label: 'Approved', color: '#16A34A' }, { label: 'Rejected', color: '#DC2626' }].map(item => (
+                  <div key={item.label} className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
+                    <span className="text-[10px] text-slate-500">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* SES Breakdown */}
             <div className="anim-in opacity-0 gov-card p-4 sm:p-5">
               <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">SES STATUS BREAKDOWN</h3>
@@ -528,12 +573,27 @@ export default function MandalView() {
               </div>
             </div>
 
-            {/* Quick action */}
+            {/* Quick action + Export */}
             <div className="anim-in opacity-0 gov-card p-4">
-              <p className="text-xs text-slate-400 mb-2">Select a village from the map or list to view family details and relocation data.</p>
-              <div className="flex items-center gap-2 text-xs" style={{ color: accentColor }}>
+              <p className="text-xs text-slate-400 mb-3">Select a village from the map or list to view family details and relocation data.</p>
+              <div className="flex items-center gap-2 text-xs mb-3" style={{ color: accentColor }}>
                 <MapPin className="w-3.5 h-3.5"/><span>{villages.length} villages available</span>
               </div>
+              <button
+                onClick={() => {
+                  const csv = ['Village,Total Families,First Scheme Eligible,Surveyed,Verified,Approved,Rejected'];
+                  villages.forEach(v => {
+                    csv.push(`${v.name},${v.totalFamilies},${v.firstSchemeCount},${v.statusBreakdown.SURVEYED || 0},${v.statusBreakdown.VERIFIED || 0},${v.statusBreakdown.APPROVED || 0},${v.statusBreakdown.REJECTED || 0}`);
+                  });
+                  const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a'); a.href = url; a.download = `${mandalInfo?.name || 'mandal'}-villages.csv`; a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+              >
+                <Download className="w-3.5 h-3.5" /> Export Village Data (CSV)
+              </button>
             </div>
           </div>
         </div>

@@ -52,12 +52,94 @@ const STAR_PARTICLES_CONFIG = {
 };
 
 // ─────────────────────────────────────────────
+// Ashoka Chakra SVG decorative element
+// ─────────────────────────────────────────────
+function AshokaChakra({ size = 48, className = '' }: { size?: number; className?: string }) {
+  const spokes = 24;
+  const r = size / 2;
+  const innerR = r * 0.35;
+  const outerR = r * 0.85;
+  const spokeLines = Array.from({ length: spokes }, (_, i) => {
+    const angle = (i * 2 * Math.PI) / spokes;
+    const x1 = r + innerR * Math.cos(angle);
+    const y1 = r + innerR * Math.sin(angle);
+    const x2 = r + outerR * Math.cos(angle);
+    const y2 = r + outerR * Math.sin(angle);
+    return (
+      <line
+        key={i}
+        x1={x1}
+        y1={y1}
+        x2={x2}
+        y2={y2}
+        stroke="#D97706"
+        strokeWidth={size > 40 ? 1 : 0.5}
+        opacity={0.5}
+      />
+    );
+  });
+
+  return (
+    <svg width={size} height={size} className={className} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={r} cy={r} r={r * 0.9} fill="none" stroke="#D97706" strokeWidth={1} opacity={0.35} />
+      <circle cx={r} cy={r} r={innerR} fill="none" stroke="#D97706" strokeWidth={1} opacity={0.4} />
+      {spokeLines}
+      <circle cx={r} cy={r} r={r * 0.15} fill="#D97706" opacity={0.4} />
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Animated Stat Counters
+// ─────────────────────────────────────────────
+function StatCounters({ className = '' }: { className?: string }) {
+  return (
+    <div className={`flex items-center justify-center gap-2 sm:gap-4 text-white/90 ${className}`}>
+      <span className="text-amber-400 font-bold text-sm sm:text-base md:text-lg">750+</span>
+      <span className="text-white/50 text-xs sm:text-sm">Families</span>
+      <span className="text-white/30">|</span>
+      <span className="text-amber-400 font-bold text-sm sm:text-base md:text-lg">3</span>
+      <span className="text-white/50 text-xs sm:text-sm">Mandals</span>
+      <span className="text-white/30">|</span>
+      <span className="text-amber-400 font-bold text-sm sm:text-base md:text-lg">15</span>
+      <span className="text-white/50 text-xs sm:text-sm">Villages</span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Floating Particles (CSS-only)
+// ─────────────────────────────────────────────
+function FloatingParticles() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {Array.from({ length: 20 }, (_, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: `${2 + Math.random() * 4}px`,
+            height: `${2 + Math.random() * 4}px`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            background: `rgba(245, 158, 11, ${0.15 + Math.random() * 0.25})`,
+            animation: `floatParticle ${6 + Math.random() * 8}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 5}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Fallback Component (WebGL not available)
 // ─────────────────────────────────────────────
 function GlobeFallback({ onEnter }: { onEnter: () => void }) {
   const titleRef = useRef<HTMLDivElement>(null);
   const subtitleRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const tl = gsap.timeline({ delay: 0.5 });
@@ -76,6 +158,13 @@ function GlobeFallback({ onEnter }: { onEnter: () => void }) {
     );
 
     tl.fromTo(
+      statsRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' },
+      '-=0.2'
+    );
+
+    tl.fromTo(
       buttonRef.current,
       { opacity: 0, scale: 0.9 },
       { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.7)' },
@@ -88,19 +177,40 @@ function GlobeFallback({ onEnter }: { onEnter: () => void }) {
   }, []);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden" style={{ backgroundColor: '#020818' }}>
+    <div className="relative w-full h-screen overflow-hidden" style={{ background: 'linear-gradient(135deg, #0F2B46 0%, #1E3A5F 40%, #0A1628 100%)' }}>
       {/* Tricolor Bar at top */}
       <div className="absolute top-0 left-0 right-0 z-[5] h-[3px]" style={{ background: 'linear-gradient(90deg, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%)' }} />
-      {/* Static map background */}
+
+      {/* Government of Andhra Pradesh branding - top left */}
+      <div className="absolute top-5 left-5 z-10 flex items-center gap-2">
+        <div className="flex gap-[2px]">
+          <div className="w-1 h-4 bg-[#FF9933] rounded-sm" />
+          <div className="w-1 h-4 bg-white rounded-sm" />
+          <div className="w-1 h-4 bg-[#138808] rounded-sm" />
+        </div>
+        <span className="text-[10px] sm:text-xs text-white/50 tracking-wider uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+          Government of Andhra Pradesh
+        </span>
+      </div>
+
+      {/* Ashoka Chakra decorative - top right */}
+      <div className="absolute top-4 right-6 z-10 opacity-30">
+        <AshokaChakra size={56} />
+      </div>
+
+      {/* Floating particles */}
+      <FloatingParticles />
+
+      {/* India map watermark */}
       <div className="absolute inset-0">
         <div
-          className="w-full h-full bg-cover bg-center opacity-40"
+          className="w-full h-full bg-cover bg-center opacity-20"
           style={{
             backgroundImage: `url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/India_location_map.svg/1280px-India_location_map.svg.png')`,
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#020818] via-[#020818]/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#020818]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628] via-[#0A1628]/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0F2B46]/40 to-transparent" />
       </div>
 
       {/* Polavaram marker pulse */}
@@ -120,7 +230,12 @@ function GlobeFallback({ onEnter }: { onEnter: () => void }) {
           >
             POLAVARAM PROJECT
           </h1>
-          <div className="mt-2 mx-auto w-48 sm:w-64 h-[1px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+          {/* Tricolor decorative line under title */}
+          <div className="mt-3 mx-auto flex items-center justify-center gap-0">
+            <div className="h-[2px] w-16 sm:w-24 bg-[#FF9933]" />
+            <div className="h-[2px] w-16 sm:w-24 bg-white" />
+            <div className="h-[2px] w-16 sm:w-24 bg-[#138808]" />
+          </div>
           <p
             className="mt-3 text-sm sm:text-base md:text-lg text-gray-300 tracking-widest uppercase"
             style={{ fontFamily: 'var(--font-inter)' }}
@@ -129,23 +244,31 @@ function GlobeFallback({ onEnter }: { onEnter: () => void }) {
           </p>
         </div>
 
-        <div ref={subtitleRef} className="mt-6 opacity-0">
-          <p className="text-amber-400/90 text-sm sm:text-base md:text-lg tracking-wide">
-            14,000+ Families &nbsp;|&nbsp; 3 Mandals &nbsp;|&nbsp; 30 Villages
-          </p>
+        <div ref={subtitleRef} className="mt-4 opacity-0">
+          <StatCounters />
         </div>
 
         <button
           ref={buttonRef}
           onClick={onEnter}
-          className="mt-10 opacity-0 group relative px-8 py-3 border border-amber-500/50 rounded-lg
-                     text-amber-400 text-sm sm:text-base tracking-wider uppercase
-                     transition-all duration-300 hover:bg-amber-500/10 hover:border-amber-400
-                     hover:shadow-[0_0_30px_rgba(245,158,11,0.2)] cursor-pointer"
+          className="mt-8 opacity-0 group relative px-10 py-4 rounded-lg
+                     bg-gradient-to-r from-amber-500 to-amber-600
+                     text-white text-sm sm:text-base tracking-[0.15em] uppercase font-semibold
+                     shadow-lg shadow-amber-500/30
+                     transition-all duration-300 hover:from-amber-400 hover:to-amber-500
+                     hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105
+                     cursor-pointer active:scale-100"
         >
-          Enter Portal →
-          <span className="absolute inset-0 rounded-lg bg-amber-500/5 animate-pulse-glow opacity-0 group-hover:opacity-100 transition-opacity" />
+          ENTER PORTAL →
         </button>
+
+        {/* Bottom Ashoka Chakra + government text */}
+        <div className="mt-6 flex items-center gap-3 opacity-0" ref={statsRef}>
+          <AshokaChakra size={28} className="opacity-40" />
+          <p className="text-[10px] sm:text-xs text-white/40 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+            Water Resources Department — Govt. of A.P.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -239,7 +362,22 @@ function MobileGlobeView({ onEnter }: { onEnter: () => void }) {
   const particlesLoaded = useCallback(async () => {}, []);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden" style={{ backgroundColor: '#020818' }}>
+    <div className="relative w-full h-screen overflow-hidden" style={{ background: 'linear-gradient(135deg, #0F2B46 0%, #1E3A5F 40%, #0A1628 100%)' }}>
+      {/* Tricolor Bar at top */}
+      <div className="absolute top-0 left-0 right-0 z-[5] h-[3px]" style={{ background: 'linear-gradient(90deg, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%)' }} />
+
+      {/* Government branding top-left */}
+      <div className="absolute top-5 left-4 z-10 flex items-center gap-1.5">
+        <div className="flex gap-[1px]">
+          <div className="w-[3px] h-3 bg-[#FF9933] rounded-sm" />
+          <div className="w-[3px] h-3 bg-white rounded-sm" />
+          <div className="w-[3px] h-3 bg-[#138808] rounded-sm" />
+        </div>
+        <span className="text-[9px] text-white/50 tracking-wider uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+          Govt. of A.P.
+        </span>
+      </div>
+
       {/* Star field */}
       {particlesInit && (
         <Particles
@@ -260,7 +398,7 @@ function MobileGlobeView({ onEnter }: { onEnter: () => void }) {
       </div>
 
       {/* Gradient overlay for readability */}
-      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[#020818] via-[#020818]/80 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[#0A1628] via-[#0A1628]/80 to-transparent pointer-events-none" />
 
       {/* Title card - positioned at bottom on mobile */}
       <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center z-10 px-6">
@@ -271,7 +409,12 @@ function MobileGlobeView({ onEnter }: { onEnter: () => void }) {
           >
             POLAVARAM PROJECT
           </h1>
-          <div className="mt-2 mx-auto w-32 h-[1px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+          {/* Tricolor line */}
+          <div className="mt-2 mx-auto flex items-center justify-center gap-0">
+            <div className="h-[2px] w-8 bg-[#FF9933]" />
+            <div className="h-[2px] w-8 bg-white" />
+            <div className="h-[2px] w-8 bg-[#138808]" />
+          </div>
           <p
             className="mt-1.5 text-xs text-gray-300 tracking-widest uppercase"
             style={{ fontFamily: 'var(--font-inter)' }}
@@ -281,20 +424,21 @@ function MobileGlobeView({ onEnter }: { onEnter: () => void }) {
         </div>
 
         <div ref={subtitleRef} className="mt-3 opacity-0">
-          <p className="text-amber-400/90 text-xs tracking-wide">
-            14,000+ Families | 3 Mandals | 30 Villages
-          </p>
+          <StatCounters className="text-xs" />
         </div>
 
         <button
           ref={buttonRef}
           onClick={onEnter}
-          className="mt-5 opacity-0 group relative px-6 py-2.5 border border-amber-500/50 rounded-lg
-                     text-amber-400 text-xs tracking-wider uppercase
-                     transition-all duration-300 hover:bg-amber-500/10 hover:border-amber-400
-                     hover:shadow-[0_0_30px_rgba(245,158,11,0.2)] cursor-pointer"
+          className="mt-5 opacity-0 group relative px-8 py-3 rounded-lg
+                     bg-gradient-to-r from-amber-500 to-amber-600
+                     text-white text-xs tracking-[0.15em] uppercase font-semibold
+                     shadow-lg shadow-amber-500/30
+                     transition-all duration-300 hover:from-amber-400 hover:to-amber-500
+                     hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105
+                     cursor-pointer active:scale-100"
         >
-          Enter Portal →
+          ENTER PORTAL →
         </button>
       </div>
     </div>
@@ -311,6 +455,7 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
   const titleRef = useRef<HTMLDivElement>(null);
   const subtitleRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
 
   // Init tsparticles
   useEffect(() => {
@@ -346,6 +491,7 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
     const tl = gsap.timeline();
     tl.fromTo(titleRef.current, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' });
     tl.fromTo(subtitleRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.5');
+    tl.fromTo(statsRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.3');
     setTimeout(() => {
       gsap.fromTo(buttonRef.current, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.7)' });
     }, 1000);
@@ -435,7 +581,7 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
   }
 
   return (
-    <div className="relative w-full h-screen overflow-hidden" style={{ backgroundColor: '#020818' }}>
+    <div className="relative w-full h-screen overflow-hidden" style={{ background: 'linear-gradient(135deg, #0F2B46 0%, #1E3A5F 40%, #0A1628 100%)' }}>
       {/* Star field particles */}
       {particlesInit && (
         <Particles
@@ -456,10 +602,33 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
       </div>
 
       {/* Top gradient for atmospheric feel */}
-      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#020818]/60 to-transparent z-[2] pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#0A1628]/60 to-transparent z-[2] pointer-events-none" />
 
       {/* Bottom gradient for title readability */}
-      <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#020818] via-[#020818]/70 to-transparent z-[2] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#0A1628] via-[#0A1628]/70 to-transparent z-[2] pointer-events-none" />
+
+      {/* Government of Andhra Pradesh branding - top left */}
+      <div className="absolute top-5 left-6 z-[3] flex items-center gap-2.5">
+        <div className="flex gap-[2px]">
+          <div className="w-1 h-4 bg-[#FF9933] rounded-sm" />
+          <div className="w-1 h-4 bg-white rounded-sm" />
+          <div className="w-1 h-4 bg-[#138808] rounded-sm" />
+        </div>
+        <span className="text-[10px] sm:text-xs text-white/50 tracking-wider uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+          Government of Andhra Pradesh
+        </span>
+      </div>
+
+      {/* LIVE PORTAL indicator - top right */}
+      <div className="absolute top-4 right-6 z-[3] flex items-center gap-3">
+        <div className="flex items-center gap-2 text-gray-400 text-xs">
+          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span style={{ fontFamily: 'var(--font-jetbrains)' }}>LIVE PORTAL</span>
+        </div>
+        <div className="w-px h-4 bg-white/20" />
+        <span className="text-[10px] text-white/40 tracking-wider uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>GOVT. OF A.P.</span>
+        <AshokaChakra size={28} className="opacity-30" />
+      </div>
 
       {/* Title card overlay */}
       <div className="absolute bottom-16 left-0 right-0 flex flex-col items-center z-[3] px-4">
@@ -470,7 +639,12 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
           >
             POLAVARAM PROJECT
           </h1>
-          <div className="mt-3 mx-auto w-64 sm:w-80 h-[1px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+          {/* Tricolor decorative line under title */}
+          <div className="mt-3 mx-auto flex items-center justify-center gap-0">
+            <div className="h-[2px] w-20 sm:w-28 bg-[#FF9933]" />
+            <div className="h-[2px] w-20 sm:w-28 bg-white" />
+            <div className="h-[2px] w-20 sm:w-28 bg-[#138808]" />
+          </div>
           <p
             className="mt-3 text-base sm:text-lg md:text-xl text-gray-300 tracking-[0.25em] uppercase"
             style={{ fontFamily: 'var(--font-inter)' }}
@@ -480,35 +654,31 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
         </div>
 
         <div ref={subtitleRef} className="mt-5 opacity-0">
-          <p className="text-amber-400/90 text-base sm:text-lg tracking-wide">
-            14,000+ Families &nbsp;|&nbsp; 3 Mandals &nbsp;|&nbsp; 30 Villages
-          </p>
+          <StatCounters />
         </div>
 
         <button
           ref={buttonRef}
           onClick={onEnter}
-          className="mt-8 opacity-0 group relative px-10 py-3.5 border border-amber-500/50 rounded-lg
-                     text-amber-400 text-sm tracking-[0.2em] uppercase font-medium
-                     transition-all duration-300 hover:bg-amber-500/10 hover:border-amber-400
-                     hover:shadow-[0_0_40px_rgba(245,158,11,0.25)] cursor-pointer
+          className="mt-8 opacity-0 group relative px-12 py-4 rounded-lg
+                     bg-gradient-to-r from-amber-500 to-amber-600
+                     text-white text-sm tracking-[0.2em] uppercase font-semibold
+                     shadow-lg shadow-amber-500/30
+                     transition-all duration-300 hover:from-amber-400 hover:to-amber-500
+                     hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105
+                     cursor-pointer active:scale-100
                      backdrop-blur-sm"
         >
-          Enter Portal →
-          {/* Glow effect */}
-          <span className="absolute -inset-px rounded-lg bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          ENTER PORTAL →
         </button>
 
         {/* Government attribution */}
-        <p className="mt-6 text-[10px] sm:text-xs text-gray-600 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-          Government of Andhra Pradesh — Water Resources Department
-        </p>
-      </div>
-
-      {/* Loading indicator for globe */}
-      <div className="absolute top-4 right-4 z-[3] flex items-center gap-2 text-gray-500 text-xs">
-        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-        <span style={{ fontFamily: 'var(--font-jetbrains)' }}>LIVE PORTAL</span>
+        <div ref={statsRef} className="mt-6 flex items-center gap-3 opacity-0">
+          <AshokaChakra size={32} className="opacity-30" />
+          <p className="text-[10px] sm:text-xs text-gray-600 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+            Government of Andhra Pradesh — Water Resources Department
+          </p>
+        </div>
       </div>
     </div>
   );

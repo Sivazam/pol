@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20');
     const search = request.nextUrl.searchParams.get('search') || '';
     const sesStatus = request.nextUrl.searchParams.get('sesStatus') || '';
+    const sortBy = request.nextUrl.searchParams.get('sortBy') || 'pdfNumber';
 
     if (!villageId) {
       return NextResponse.json({ error: 'villageId is required', code: 400 }, { status: 400 });
@@ -24,6 +25,14 @@ export async function GET(request: NextRequest) {
       where.sesStatus = sesStatus;
     }
 
+    // Determine sort order
+    let orderBy: any = { pdfNumber: 'asc' };
+    if (sortBy === 'headName') {
+      orderBy = { headName: 'asc' };
+    } else if (sortBy === 'sesStatus') {
+      orderBy = { sesStatus: 'asc' };
+    }
+
     const [families, total] = await Promise.all([
       db.family.findMany({
         where,
@@ -33,7 +42,7 @@ export async function GET(request: NextRequest) {
           firstSchemeEligible: true,
           _count: { select: { members: true } },
         },
-        orderBy: { pdfNumber: 'asc' },
+        orderBy,
         skip: (page - 1) * limit,
         take: limit,
       }),
