@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import gsap from 'gsap';
+import { Users, Map, Building2 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { POLAVARAM_DAM, ANDHRA_PRADESH } from '@/lib/constants';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -94,15 +95,24 @@ function AshokaChakra({ size = 48, className = '' }: { size?: number; className?
 // ─────────────────────────────────────────────
 function StatCounters({ className = '' }: { className?: string }) {
   return (
-    <div className={`flex items-center justify-center gap-2 sm:gap-4 text-white/90 ${className}`}>
-      <span className="text-amber-400 font-bold text-sm sm:text-base md:text-lg">750+</span>
-      <span className="text-white/50 text-xs sm:text-sm">Families</span>
-      <span className="text-white/30">|</span>
-      <span className="text-amber-400 font-bold text-sm sm:text-base md:text-lg">3</span>
-      <span className="text-white/50 text-xs sm:text-sm">Mandals</span>
-      <span className="text-white/30">|</span>
-      <span className="text-amber-400 font-bold text-sm sm:text-base md:text-lg">15</span>
-      <span className="text-white/50 text-xs sm:text-sm">Villages</span>
+    <div className={`inline-flex items-center justify-center gap-3 sm:gap-5 text-white/90 bg-white/5 backdrop-blur-sm rounded-full px-5 sm:px-8 py-2.5 ${className}`}>
+      <div className="flex items-center gap-1.5">
+        <Users className="w-3.5 h-3.5 text-amber-400/80" />
+        <span className="text-amber-400 font-bold text-sm sm:text-base md:text-xl">750+</span>
+        <span className="text-white/50 text-xs sm:text-sm">Affected</span>
+      </div>
+      <span className="text-white/20">|</span>
+      <div className="flex items-center gap-1.5">
+        <Map className="w-3.5 h-3.5 text-amber-400/80" />
+        <span className="text-amber-400 font-bold text-sm sm:text-base md:text-xl">3</span>
+        <span className="text-white/50 text-xs sm:text-sm">Mandals</span>
+      </div>
+      <span className="text-white/20">|</span>
+      <div className="flex items-center gap-1.5">
+        <Building2 className="w-3.5 h-3.5 text-amber-400/80" />
+        <span className="text-amber-400 font-bold text-sm sm:text-base md:text-xl">15</span>
+        <span className="text-white/50 text-xs sm:text-sm">Villages</span>
+      </div>
     </div>
   );
 }
@@ -178,6 +188,11 @@ function GlobeFallback({ onEnter }: { onEnter: () => void }) {
 
   return (
     <div className="relative w-full h-screen overflow-hidden" style={{ background: 'linear-gradient(135deg, #0F2B46 0%, #1E3A5F 40%, #0A1628 100%)' }}>
+      {/* Animated gradient border around entire fallback */}
+      <div className="absolute inset-0 z-[4] pointer-events-none">
+        <div className="absolute inset-0 p-[2px] rounded-none animate-gradient-border" style={{ WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' }} />
+      </div>
+
       {/* Tricolor Bar at top */}
       <div className="absolute top-0 left-0 right-0 z-[5] h-[3px]" style={{ background: 'linear-gradient(90deg, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%)' }} />
 
@@ -201,10 +216,10 @@ function GlobeFallback({ onEnter }: { onEnter: () => void }) {
       {/* Floating particles */}
       <FloatingParticles />
 
-      {/* India map watermark */}
+      {/* India map watermark - enhanced visibility */}
       <div className="absolute inset-0">
         <div
-          className="w-full h-full bg-cover bg-center opacity-20"
+          className="w-full h-full bg-cover bg-center opacity-25"
           style={{
             backgroundImage: `url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/India_location_map.svg/1280px-India_location_map.svg.png')`,
           }}
@@ -248,26 +263,45 @@ function GlobeFallback({ onEnter }: { onEnter: () => void }) {
           <StatCounters />
         </div>
 
-        <button
-          ref={buttonRef}
-          onClick={onEnter}
-          className="mt-8 opacity-0 group relative px-10 py-4 rounded-lg
-                     bg-gradient-to-r from-amber-500 to-amber-600
-                     text-white text-sm sm:text-base tracking-[0.15em] uppercase font-semibold
-                     shadow-lg shadow-amber-500/30
-                     transition-all duration-300 hover:from-amber-400 hover:to-amber-500
-                     hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105
-                     cursor-pointer active:scale-100"
-        >
-          ENTER PORTAL →
-        </button>
+        <div className="mt-8 opacity-0 flex flex-col items-center" ref={buttonRef}>
+          <button
+            onClick={onEnter}
+            className="group relative px-10 sm:px-14 py-4 rounded-lg
+                       bg-gradient-to-r from-amber-500 to-amber-600
+                       text-white text-sm sm:text-base tracking-[0.15em] uppercase font-semibold
+                       shadow-lg shadow-amber-500/30
+                       animate-shimmer-glow
+                       transition-all duration-300 hover:from-amber-400 hover:to-amber-500
+                       hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105
+                       cursor-pointer active:scale-100"
+          >
+            ENTER PORTAL →
+          </button>
+          <span className="mt-2 text-[10px] text-white/40 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+            Government of Andhra Pradesh
+          </span>
+        </div>
 
         {/* Bottom Ashoka Chakra + government text */}
-        <div className="mt-6 flex items-center gap-3 opacity-0" ref={statsRef}>
-          <AshokaChakra size={28} className="opacity-40" />
-          <p className="text-[10px] sm:text-xs text-white/40 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-            Water Resources Department — Govt. of A.P.
-          </p>
+        <div className="mt-6 flex flex-col items-center gap-2 opacity-0" ref={statsRef}>
+          <div className="flex items-center gap-3">
+            {/* Ashoka emblem placeholder */}
+            <div className="w-7 h-7 rounded-full border border-amber-600/30 flex items-center justify-center bg-amber-600/10">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-amber-500/60">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+                <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.4" />
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] sm:text-xs text-white/40 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>भारत सरकार</span>
+                <span className="text-white/20">•</span>
+                <span className="text-[10px] sm:text-xs text-white/40 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>GOVT. OF A.P.</span>
+              </div>
+              <span className="text-[9px] sm:text-[10px] text-white/30 tracking-wider" style={{ fontFamily: 'var(--font-jetbrains)' }}>Water Resources Department</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -374,7 +408,7 @@ function MobileGlobeView({ onEnter }: { onEnter: () => void }) {
           <div className="w-[3px] h-3 bg-[#138808] rounded-sm" />
         </div>
         <span className="text-[9px] text-white/50 tracking-wider uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-          Govt. of A.P.
+          भारत सरकार • Govt. of A.P.
         </span>
       </div>
 
@@ -427,19 +461,24 @@ function MobileGlobeView({ onEnter }: { onEnter: () => void }) {
           <StatCounters className="text-xs" />
         </div>
 
-        <button
-          ref={buttonRef}
-          onClick={onEnter}
-          className="mt-5 opacity-0 group relative px-8 py-3 rounded-lg
-                     bg-gradient-to-r from-amber-500 to-amber-600
-                     text-white text-xs tracking-[0.15em] uppercase font-semibold
-                     shadow-lg shadow-amber-500/30
-                     transition-all duration-300 hover:from-amber-400 hover:to-amber-500
-                     hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105
-                     cursor-pointer active:scale-100"
-        >
-          ENTER PORTAL →
-        </button>
+        <div className="mt-5 opacity-0 flex flex-col items-center" ref={buttonRef}>
+          <button
+            onClick={onEnter}
+            className="group relative px-8 sm:px-10 py-3 rounded-lg
+                       bg-gradient-to-r from-amber-500 to-amber-600
+                       text-white text-xs tracking-[0.15em] uppercase font-semibold
+                       shadow-lg shadow-amber-500/30
+                       animate-shimmer-glow
+                       transition-all duration-300 hover:from-amber-400 hover:to-amber-500
+                       hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105
+                       cursor-pointer active:scale-100"
+          >
+            ENTER PORTAL →
+          </button>
+          <span className="mt-1.5 text-[9px] text-white/35 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+            Government of Andhra Pradesh
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -626,7 +665,7 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
           <span style={{ fontFamily: 'var(--font-jetbrains)' }}>LIVE PORTAL</span>
         </div>
         <div className="w-px h-4 bg-white/20" />
-        <span className="text-[10px] text-white/40 tracking-wider uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>GOVT. OF A.P.</span>
+        <span className="text-[10px] text-white/40 tracking-wider uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>भारत सरकार • GOVT. OF A.P.</span>
         <AshokaChakra size={28} className="opacity-30" />
       </div>
 
@@ -657,27 +696,37 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
           <StatCounters />
         </div>
 
-        <button
-          ref={buttonRef}
-          onClick={onEnter}
-          className="mt-8 opacity-0 group relative px-12 py-4 rounded-lg
-                     bg-gradient-to-r from-amber-500 to-amber-600
-                     text-white text-sm tracking-[0.2em] uppercase font-semibold
-                     shadow-lg shadow-amber-500/30
-                     transition-all duration-300 hover:from-amber-400 hover:to-amber-500
-                     hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105
-                     cursor-pointer active:scale-100
-                     backdrop-blur-sm"
-        >
-          ENTER PORTAL →
-        </button>
+        <div className="mt-8 opacity-0 flex flex-col items-center" ref={buttonRef}>
+          <button
+            onClick={onEnter}
+            className="group relative px-14 sm:px-16 py-4 rounded-lg
+                       bg-gradient-to-r from-amber-500 to-amber-600
+                       text-white text-sm tracking-[0.2em] uppercase font-semibold
+                       shadow-lg shadow-amber-500/30
+                       animate-shimmer-glow
+                       transition-all duration-300 hover:from-amber-400 hover:to-amber-500
+                       hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105
+                       cursor-pointer active:scale-100
+                       backdrop-blur-sm"
+          >
+            ENTER PORTAL →
+          </button>
+          <span className="mt-2 text-[10px] text-white/40 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+            Government of Andhra Pradesh
+          </span>
+        </div>
 
         {/* Government attribution */}
         <div ref={statsRef} className="mt-6 flex items-center gap-3 opacity-0">
           <AshokaChakra size={32} className="opacity-30" />
-          <p className="text-[10px] sm:text-xs text-gray-600 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-            Government of Andhra Pradesh — Water Resources Department
-          </p>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] sm:text-xs text-white/50 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>भारत सरकार</span>
+              <span className="text-white/20">•</span>
+              <span className="text-[10px] sm:text-xs text-white/50 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>GOVT. OF A.P.</span>
+            </div>
+            <span className="text-[9px] sm:text-[10px] text-white/30 tracking-wider" style={{ fontFamily: 'var(--font-jetbrains)' }}>Government of Andhra Pradesh — Water Resources Department</span>
+          </div>
         </div>
       </div>
     </div>

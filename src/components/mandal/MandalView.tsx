@@ -7,12 +7,14 @@ import CountUp from 'react-countup';
 import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import {
-  ChevronRight, ChevronLeft, Activity, MapPin, Users, Home, CheckCircle2, Download,
+  ChevronRight, ChevronLeft, Activity, MapPin, Users, Home, CheckCircle2, Download, Map as MapIcon,
 } from 'lucide-react';
 import GlobalSearch from '@/components/shared/GlobalSearch';
 import Breadcrumb from '@/components/shared/Breadcrumb';
 import GovFooter from '@/components/shared/GovFooter';
 import SidebarNav from '@/components/shared/SidebarNav';
+import MobileMenuButton from '@/components/shared/MobileMenuButton';
+import ThemeToggle from '@/components/shared/ThemeToggle';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 /* ------------------------------------------------------------------ */
@@ -235,7 +237,7 @@ export default function MandalView() {
       <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md lg:pl-[52px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <SidebarNav />
+            <MobileMenuButton />
             <button onClick={goBack} className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1">
               <ChevronLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span>
             </button>
@@ -250,6 +252,7 @@ export default function MandalView() {
             <span className="font-semibold text-sm" style={{ color: accentColor }}>{mandalInfo?.name?.toUpperCase()}</span>
             <span className="hidden md:inline">Government of Andhra Pradesh</span>
             <div className="flex items-center gap-1.5 text-emerald-400"><Activity className="w-3 h-3" /><span>LIVE</span></div>
+            <ThemeToggle />
           </div>
         </div>
       </div>
@@ -259,33 +262,41 @@ export default function MandalView() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Mandal Header */}
-        <div className="anim-in opacity-0 gov-card p-5 sm:p-6 text-center border-l-4" style={{ borderLeftColor: accentColor }}>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: accentColor }}>
-            {mandalInfo?.name ?? 'Mandal'}
-          </h1>
-          <p className="text-slate-500 text-lg">{mandalInfo?.nameTelugu ?? ''}</p>
-          <div className="ashoka-divider max-w-xs mx-auto mt-3" />
-          <div className="flex items-center justify-center gap-6 sm:gap-10 pt-4">
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-1.5">
-                <Users className="w-4 h-4" style={{ color: accentColor }} />
-                <span className="counter-value text-2xl font-bold text-slate-900"><CountUp end={totalFamilies} duration={2} separator="," /></span>
-              </div>
-              <span className="text-xs text-slate-400 mt-0.5">Total Families</span>
+        <div className="anim-in opacity-0 gov-card p-5 sm:p-6 text-center border-l-4 relative overflow-hidden" style={{ borderLeftColor: accentColor }}>
+          {/* Subtle gradient overlay at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-50/50 to-transparent pointer-events-none" />
+          <div className="relative z-[1]">
+            <div className="flex items-center justify-center gap-2">
+              <MapIcon className="w-6 h-6" style={{ color: accentColor }} />
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: accentColor }}>
+                {mandalInfo?.name ?? 'Mandal'}
+              </h1>
             </div>
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4" style={{ color: accentColor }} />
-                <span className="counter-value text-2xl font-bold text-slate-900"><CountUp end={villages.length} duration={1.5} /></span>
+            <p className="text-slate-500 text-lg">{mandalInfo?.nameTelugu ?? ''}</p>
+            <p className="text-slate-400 text-xs mt-0.5" style={{ fontFamily: 'var(--font-jetbrains)' }}>Code: {mandalCode}</p>
+            <div className="ashoka-divider max-w-xs mx-auto mt-3" />
+            <div className="flex items-center justify-center gap-6 sm:gap-10 pt-4">
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4" style={{ color: accentColor }} />
+                  <span className="counter-value text-2xl font-bold text-slate-900"><CountUp end={totalFamilies} duration={2} separator="," /></span>
+                </div>
+                <span className="text-xs text-slate-400 mt-0.5">Total Families</span>
               </div>
-              <span className="text-xs text-slate-400 mt-0.5">Villages</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" style={{ color: accentColor }} />
-                <span className="counter-value text-2xl font-bold text-slate-900"><CountUp end={totalFirstScheme} duration={2} separator="," /></span>
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4" style={{ color: accentColor }} />
+                  <span className="counter-value text-2xl font-bold text-slate-900"><CountUp end={villages.length} duration={1.5} /></span>
+                </div>
+                <span className="text-xs text-slate-400 mt-0.5">Villages</span>
               </div>
-              <span className="text-xs text-slate-400 mt-0.5">First Scheme Eligible</span>
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" style={{ color: accentColor }} />
+                  <span className="counter-value text-2xl font-bold text-slate-900"><CountUp end={totalFirstScheme} duration={2} separator="," /></span>
+                </div>
+                <span className="text-xs text-slate-400 mt-0.5">First Scheme Eligible</span>
+              </div>
             </div>
           </div>
         </div>
@@ -297,11 +308,11 @@ export default function MandalView() {
               <h2 className="text-sm font-semibold text-slate-900 tracking-wide" style={{ fontFamily: 'var(--font-jetbrains)' }}>VILLAGE MAP</h2>
               <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">{mandalInfo?.name?.toUpperCase()} MANDAL</span>
             </div>
-            <div className="relative w-full h-[280px] sm:h-[400px] bg-[#F8FAFC] rounded-lg overflow-hidden border border-slate-200">
+            <div className="relative w-full h-[320px] sm:h-[450px] bg-[#F8FAFC] rounded-lg overflow-hidden border border-slate-200">
               <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-full" onMouseLeave={() => { setTooltip(null); setHoveredVillage(null); }}>
                 <defs>
                   <pattern id="mandal-grid-light" width="25" height="25" patternUnits="userSpaceOnUse">
-                    <path d="M 25 0 L 0 0 0 25" fill="none" stroke="rgba(148,163,184,0.1)" strokeWidth="0.5"/>
+                    <path d="M 25 0 L 0 0 0 25" fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="0.5"/>
                   </pattern>
                   <filter id="pin-glow-light">
                     <feGaussianBlur stdDeviation="3" result="b"/>
@@ -312,6 +323,14 @@ export default function MandalView() {
                 {/* Background */}
                 <rect width={svgW} height={svgH} fill="#F8FAFC"/>
                 <rect width={svgW} height={svgH} fill="url(#mandal-grid-light)"/>
+
+                {/* Compass indicator - N ↑ top right */}
+                <g transform={`translate(${svgW - 35}, 30)`}>
+                  <circle cx="0" cy="0" r="14" fill="white" stroke="#CBD5E1" strokeWidth="1" opacity="0.9"/>
+                  <text x="0" y="-2" textAnchor="middle" fill="#64748B" fontSize="8" fontWeight="700">N</text>
+                  <line x1="0" y1="2" x2="0" y2="8" stroke="#94A3B8" strokeWidth="1.5"/>
+                  <polygon points="-3,8 3,8 0,12" fill="#94A3B8"/>
+                </g>
 
                 {/* Godavari river */}
                 <path d={riverSvg} fill="none" stroke="#3B82F6" strokeWidth="3" opacity="0.4" strokeDasharray="800">
@@ -384,6 +403,17 @@ export default function MandalView() {
                 <text x="99" y={svgH - 25} fill="#64748B" fontSize="7">River</text>
                 <polygon points="24,35 28,39 24,43 20,39" fill="#D97706" transform={`translate(0, ${svgH - 62})`}/>
                 <text x="32" y={svgH - 20} fill="#64748B" fontSize="7">Dam</text>
+
+                {/* Scale bar - bottom right */}
+                <g transform={`translate(${svgW - 90}, ${svgH - 25})`}>
+                  <rect x="0" y="0" width="70" height="2" fill="#94A3B8" rx="1"/>
+                  <rect x="0" y="0" width="2" height="6" fill="#94A3B8" rx="0.5"/>
+                  <rect x="34" y="0" width="2" height="4" fill="#94A3B8" rx="0.5"/>
+                  <rect x="68" y="0" width="2" height="6" fill="#94A3B8" rx="0.5"/>
+                  <text x="0" y="12" fill="#94A3B8" fontSize="6" textAnchor="middle">0</text>
+                  <text x="34" y="11" fill="#94A3B8" fontSize="6" textAnchor="middle">5</text>
+                  <text x="68" y="12" fill="#94A3B8" fontSize="6" textAnchor="middle">10 km</text>
+                </g>
               </svg>
 
               {/* Tooltip overlay */}
@@ -438,7 +468,7 @@ export default function MandalView() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 + i * 0.07 }}
-                    className="gov-card p-4 cursor-pointer group border-l-4"
+                    className="gov-card p-4 cursor-pointer group border-l-4 hover:scale-[1.01] hover:shadow-md transition-all duration-200"
                     style={{ borderLeftColor: `${accentColor}60` }}
                     onClick={() => navigateToVillage(v.id)}
                   >
@@ -450,10 +480,11 @@ export default function MandalView() {
                           <p className="text-xs text-slate-400">{v.nameTelugu}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border" style={{ backgroundColor: `${accentColor}10`, color: accentColor, borderColor: `${accentColor}30` }}>
                           <Users className="w-3 h-3"/>{v.totalFamilies}
                         </span>
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium" style={{ color: accentColor }}>View →</span>
                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 transition-colors"/>
                       </div>
                     </div>
@@ -494,8 +525,11 @@ export default function MandalView() {
           {/* Stats Section */}
           <div className="space-y-4">
             {/* SES Composition Chart */}
-            <div className="anim-in opacity-0 gov-card p-4 sm:p-5">
-              <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">VILLAGE SES COMPOSITION</h3>
+            <div className="anim-in opacity-0 gov-card p-4 sm:p-5 rounded-xl">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-slate-900 tracking-wide">VILLAGE SES COMPOSITION</h3>
+                <div className="h-[2px] w-16 mt-1 rounded-full" style={{ backgroundColor: accentColor }} />
+              </div>
               <div className="w-full" style={{ height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={villages.map(v => ({ name: v.name, ...v.statusBreakdown }))} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
@@ -518,10 +552,10 @@ export default function MandalView() {
                         );
                       }}
                     />
-                    <Bar dataKey="SURVEYED" stackId="a" fill="#94A3B8" radius={[0, 0, 0, 0]} barSize={24} name="Surveyed" />
-                    <Bar dataKey="VERIFIED" stackId="a" fill="#D97706" radius={[0, 0, 0, 0]} barSize={24} name="Verified" />
-                    <Bar dataKey="APPROVED" stackId="a" fill="#16A34A" radius={[0, 0, 0, 0]} barSize={24} name="Approved" />
-                    <Bar dataKey="REJECTED" stackId="a" fill="#DC2626" radius={[0, 4, 4, 0]} barSize={24} name="Rejected" />
+                    <Bar dataKey="SURVEYED" stackId="a" fill="#94A3B8" radius={[0, 0, 0, 0]} barSize={30} name="Surveyed" />
+                    <Bar dataKey="VERIFIED" stackId="a" fill="#D97706" radius={[0, 0, 0, 0]} barSize={30} name="Verified" />
+                    <Bar dataKey="APPROVED" stackId="a" fill="#16A34A" radius={[0, 0, 0, 0]} barSize={30} name="Approved" />
+                    <Bar dataKey="REJECTED" stackId="a" fill="#DC2626" radius={[0, 4, 4, 0]} barSize={30} name="Rejected" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -561,13 +595,35 @@ export default function MandalView() {
                   { label: 'Total Families', value: <CountUp end={totalFamilies} duration={1.5} separator="," />, bold: true },
                   { label: 'Total Villages', value: <CountUp end={villages.length} duration={1} />, bold: true },
                   { label: 'First Scheme Eligible', value: <CountUp end={totalFirstScheme} duration={1.5} separator="," />, bold: true, color: 'text-emerald-700' },
-                  { label: 'Eligibility Rate', value: `${totalFamilies ? ((totalFirstScheme / totalFamilies) * 100).toFixed(1) : 0}%`, bold: true, color: accentColor },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center justify-between p-2 bg-[#F8FAFC] rounded-lg">
                     <span className="text-xs text-slate-400">{item.label}</span>
                     <span className={`text-sm font-bold counter-value ${item.color || 'text-slate-900'}`}>{item.value}</span>
                   </div>
                 ))}
+
+                {/* Eligibility Rate with progress ring */}
+                <div className="flex items-center justify-between p-2 bg-[#F8FAFC] rounded-lg">
+                  <span className="text-xs text-slate-400">Eligibility Rate</span>
+                  <div className="flex items-center gap-2">
+                    {/* Progress ring */}
+                    <svg width="28" height="28" viewBox="0 0 28 28">
+                      <circle cx="14" cy="14" r="11" fill="none" stroke="#E2E8F0" strokeWidth="3" />
+                      <circle
+                        cx="14" cy="14" r="11" fill="none"
+                        stroke={accentColor}
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 11}`}
+                        strokeDashoffset={`${2 * Math.PI * 11 * (1 - (totalFamilies ? totalFirstScheme / totalFamilies : 0))}`}
+                        transform="rotate(-90 14 14)"
+                        style={{ transition: 'stroke-dashoffset 1.2s ease' }}
+                      />
+                    </svg>
+                    <span className="text-sm font-bold counter-value" style={{ color: accentColor }}>{totalFamilies ? ((totalFirstScheme / totalFamilies) * 100).toFixed(1) : 0}%</span>
+                    <span className="text-[10px] text-slate-400">of target</span>
+                  </div>
+                </div>
 
                 {/* Visual progress bar */}
                 <div className="mt-2">

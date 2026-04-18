@@ -42,15 +42,6 @@ export default function SidebarNav() {
 
   return (
     <>
-      {/* Mobile hamburger button - shown in the navy header */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden text-white/70 hover:text-white transition-colors p-1"
-        aria-label="Toggle navigation menu"
-      >
-        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
-
       {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (

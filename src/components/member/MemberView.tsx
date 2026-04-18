@@ -2,12 +2,19 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
+import { motion } from 'framer-motion';
 import gsap from 'gsap';
-import { ChevronLeft, Activity, User, Calendar, MapPin, Briefcase, CreditCard, Shield } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, Activity, User, Calendar, MapPin,
+  Briefcase, CreditCard, Shield, Users, Home, FileText, Phone,
+  Heart, GraduationCap, Eye
+} from 'lucide-react';
 import GlobalSearch from '@/components/shared/GlobalSearch';
 import Breadcrumb from '@/components/shared/Breadcrumb';
 import GovFooter from '@/components/shared/GovFooter';
 import SidebarNav from '@/components/shared/SidebarNav';
+import MobileMenuButton from '@/components/shared/MobileMenuButton';
+import ThemeToggle from '@/components/shared/ThemeToggle';
 
 interface MemberData {
   id: string;
@@ -24,15 +31,17 @@ interface MemberData {
     pdfNumber: string;
     headName: string;
     headNameTelugu: string;
+    sesStatus: string;
     village: {
       id: string; name: string; nameTelugu: string;
-      mandal: { name: string; nameTelugu: string; };
+      mandal: { name: string; nameTelugu: string; color: string; };
     };
   };
 }
 
 export default function MemberView() {
   const selectedMemberId = useAppStore((s) => s.selectedMemberId);
+  const navigateToFamily = useAppStore((s) => s.navigateToFamily);
   const goBack = useAppStore((s) => s.goBack);
   const setView = useAppStore((s) => s.setView);
 
@@ -73,107 +82,226 @@ export default function MemberView() {
   );
 
   const initials = member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  const avatarColorMap = [
-    { bg: 'bg-amber-100', text: 'text-amber-700' },
-    { bg: 'bg-teal-100', text: 'text-teal-700' },
-    { bg: 'bg-orange-100', text: 'text-orange-700' },
-    { bg: 'bg-blue-100', text: 'text-blue-700' },
-    { bg: 'bg-purple-100', text: 'text-purple-700' },
-    { bg: 'bg-rose-100', text: 'text-rose-700' },
+  const accentColor = member.family?.village?.mandal?.color || '#D97706';
+
+  // Avatar color based on gender and relation
+  const getAvatarStyle = () => {
+    if (member.relation === 'Head') return { bg: 'bg-[#0F2B46]', text: 'text-white', ring: 'ring-[#0F2B46]/20' };
+    if (member.gender === 'Female') return { bg: 'bg-purple-100', text: 'text-purple-700', ring: 'ring-purple-200' };
+    return { bg: 'bg-amber-100', text: 'text-amber-700', ring: 'ring-amber-200' };
+  };
+  const avatarStyle = getAvatarStyle();
+
+  // Gender icon
+  const GenderIcon = member.gender === 'Male' ? User : member.gender === 'Female' ? Heart : User;
+
+  // Info items with enhanced styling
+  const infoItems = [
+    { label: 'Age', value: `${member.age} years`, sublabel: member.isMinor ? 'Minor (Under 18)' : 'Adult', icon: Calendar, color: member.isMinor ? 'text-amber-600' : 'text-slate-600', bg: member.isMinor ? 'bg-amber-50' : 'bg-slate-50', border: member.isMinor ? 'border-amber-200' : 'border-slate-200' },
+    { label: 'Gender', value: member.gender, sublabel: member.gender === 'Male' ? '♂ Male' : member.gender === 'Female' ? '♀ Female' : member.gender, icon: GenderIcon, color: member.gender === 'Female' ? 'text-purple-600' : 'text-slate-600', bg: member.gender === 'Female' ? 'bg-purple-50' : 'bg-slate-50', border: member.gender === 'Female' ? 'border-purple-200' : 'border-slate-200' },
+    { label: 'Aadhaar Number', value: member.aadhar ? `XXXX-XXXX-${member.aadhar.slice(-4)}` : 'Not Available', sublabel: member.aadhar ? 'Partially masked' : 'Not registered', icon: CreditCard, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
+    { label: 'Occupation', value: member.occupation || 'Not Available', sublabel: member.occupation ? 'Employed' : 'Not specified', icon: Briefcase, color: member.occupation ? 'text-teal-600' : 'text-slate-400', bg: member.occupation ? 'bg-teal-50' : 'bg-slate-50', border: member.occupation ? 'border-teal-200' : 'border-slate-200' },
+    { label: 'Minor Status', value: member.isMinor ? 'Yes — Under 18' : 'No — Adult', sublabel: member.isMinor ? 'Eligible for child benefits' : 'Eligible for adult schemes', icon: Shield, color: member.isMinor ? 'text-orange-600' : 'text-green-600', bg: member.isMinor ? 'bg-orange-50' : 'bg-green-50', border: member.isMinor ? 'border-orange-200' : 'border-green-200' },
+    { label: 'Relation to Head', value: member.relation, sublabel: member.relation === 'Head' ? 'Primary applicant' : 'Family member', icon: Users, color: member.relation === 'Head' ? 'text-[#0F2B46]' : 'text-slate-600', bg: member.relation === 'Head' ? 'bg-[#0F2B46]/5' : 'bg-slate-50', border: member.relation === 'Head' ? 'border-[#0F2B46]/20' : 'border-slate-200' },
   ];
-  const avatarStyle = avatarColorMap[member.name.length % avatarColorMap.length];
 
   return (
     <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8] flex flex-col">
-      {/* Sidebar Navigation */}
       <SidebarNav />
-
-      {/* Tricolor Bar */}
       <div className="tricolor-bar w-full lg:pl-[52px]" />
 
-      {/* Top Nav - Navy gradient */}
+      {/* Top Nav */}
       <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md lg:pl-[52px]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <SidebarNav />
+            <MobileMenuButton />
             <button onClick={goBack} className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1">
               <ChevronLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span>
             </button>
             <div className="w-px h-6 bg-white/20" />
             <span className="text-sm text-white/60">{member.family.pdfNumber}</span>
+            <ChevronRight className="w-3 h-3 text-white/30" />
+            <span className="text-sm font-medium text-white/80 truncate max-w-[150px]">{member.name}</span>
           </div>
-          <GlobalSearch />
-          <div className="flex items-center gap-1.5 text-green-300 text-xs"><Activity className="w-3 h-3" /><span>LIVE</span></div>
+          <div className="flex items-center gap-3">
+            <GlobalSearch />
+            <div className="flex items-center gap-1.5 text-green-300 text-xs"><Activity className="w-3 h-3" /><span>LIVE</span></div>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
+
       <div className="flex-1">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6"><Breadcrumb /></div>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6"><Breadcrumb /></div>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {/* Avatar & Name */}
-        <div className="anim-in opacity-0 flex flex-col items-center text-center">
-          <div className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold mb-4 ${avatarStyle.bg} ${avatarStyle.text} shadow-md`}>
-            {initials}
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{member.name}</h1>
-          {member.nameTelugu && <p className="text-slate-500 mt-1">{member.nameTelugu}</p>}
-          <span className={`mt-3 text-xs px-3 py-1 rounded-full font-medium border ${
-            member.relation === 'Head' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-            member.relation === 'Spouse' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-            'bg-slate-100 text-slate-600 border-slate-200'
-          }`}>
-            {member.relation}
-          </span>
-        </div>
-
-        {/* Details Card */}
-        <div className="anim-in opacity-0 gov-card p-6">
-          <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-5">PERSONAL INFORMATION</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { label: 'Age', value: `${member.age} years${member.isMinor ? ' (Minor)' : ''}`, icon: Calendar },
-              { label: 'Gender', value: member.gender, icon: User },
-              { label: 'Aadhaar', value: member.aadhar || 'Not Available', icon: CreditCard },
-              { label: 'Occupation', value: member.occupation || 'Not Available', icon: Briefcase },
-              { label: 'Minor Status', value: member.isMinor ? 'Yes — Under 18' : 'No — Adult', icon: Shield },
-              { label: 'Relation to Head', value: member.relation, icon: User },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 bg-[#F8FAFC] rounded-lg">
-                <div className="p-2 rounded-lg bg-white border border-slate-200">
-                  <item.icon className="w-4 h-4 text-slate-500" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400">{item.label}</p>
-                  <p className="text-sm text-slate-900 font-medium">{item.value}</p>
-                </div>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+          {/* Avatar & Name - Enhanced */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="anim-in opacity-0 flex flex-col items-center text-center"
+          >
+            {/* Avatar with ring effect */}
+            <div className="relative mb-5">
+              <div className={`w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold ${avatarStyle.bg} ${avatarStyle.text} ring-4 ${avatarStyle.ring} shadow-xl`}>
+                {initials}
               </div>
-            ))}
-          </div>
-        </div>
+              {/* Gender badge overlay */}
+              <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-md ${
+                member.gender === 'Female' ? 'bg-purple-500' : 'bg-[#0F2B46]'
+              }`}>
+                <GenderIcon className="w-4 h-4 text-white" />
+              </div>
+            </div>
 
-        {/* Family Context */}
-        <div className="anim-in opacity-0 gov-card p-6">
-          <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">FAMILY CONTEXT</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-[#F8FAFC] rounded-lg">
-              <span className="text-xs text-slate-400">Family Head</span>
-              <span className="text-sm text-slate-900 font-medium">{member.family.headName} ({member.family.headNameTelugu})</span>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{member.name}</h1>
+            {member.nameTelugu && <p className="text-slate-500 mt-1 text-lg">{member.nameTelugu}</p>}
+
+            {/* Relation & Age badges */}
+            <div className="flex items-center gap-2 mt-3">
+              <span className={`text-xs px-3 py-1.5 rounded-full font-semibold border ${
+                member.relation === 'Head' ? 'bg-[#0F2B46]/10 text-[#0F2B46] border-[#0F2B46]/20' :
+                member.relation === 'Spouse' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                'bg-slate-100 text-slate-600 border-slate-200'
+              }`}>
+                {member.relation === 'Head' && <span className="mr-1">★</span>}
+                {member.relation}
+              </span>
+              <span className={`text-xs px-3 py-1.5 rounded-full font-semibold border ${
+                member.isMinor ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-green-50 text-green-700 border-green-200'
+              }`}>
+                {member.age} years {member.isMinor ? '(Minor)' : ''}
+              </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-[#F8FAFC] rounded-lg">
-              <span className="text-xs text-slate-400">PDF Number</span>
-              <span className="gov-badge text-amber-700 font-semibold">{member.family.pdfNumber}</span>
+          </motion.div>
+
+          {/* Quick Info Strip */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="anim-in opacity-0 grid grid-cols-3 gap-3"
+          >
+            <div className="gov-card p-3 text-center border-t-[3px] border-t-[#0F2B46]">
+              <p className="text-xs text-slate-400 mb-1">Age</p>
+              <p className="text-xl font-bold text-slate-900">{member.age}</p>
+              <p className="text-[10px] text-slate-400">{member.isMinor ? 'Minor' : 'Adult'}</p>
             </div>
-            <div className="flex items-center justify-between p-3 bg-[#F8FAFC] rounded-lg">
-              <span className="text-xs text-slate-400">Village</span>
-              <span className="text-sm text-slate-900 font-medium flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" />{member.family.village.name} ({member.family.village.nameTelugu})</span>
+            <div className="gov-card p-3 text-center border-t-[3px] border-t-purple-400">
+              <p className="text-xs text-slate-400 mb-1">Gender</p>
+              <p className="text-xl font-bold text-slate-900">{member.gender === 'Male' ? '♂' : member.gender === 'Female' ? '♀' : '?'}</p>
+              <p className="text-[10px] text-slate-400">{member.gender}</p>
             </div>
-            <div className="flex items-center justify-between p-3 bg-[#F8FAFC] rounded-lg">
-              <span className="text-xs text-slate-400">Mandal</span>
-              <span className="text-sm text-slate-900 font-medium">{member.family.village.mandal.name} ({member.family.village.mandal.nameTelugu})</span>
+            <div className="gov-card p-3 text-center border-t-[3px] border-t-amber-400">
+              <p className="text-xs text-slate-400 mb-1">Relation</p>
+              <p className="text-xl font-bold text-slate-900">{member.relation === 'Head' ? '★' : '#'}</p>
+              <p className="text-[10px] text-slate-400">{member.relation}</p>
             </div>
-          </div>
+          </motion.div>
+
+          {/* Personal Information Card - Enhanced */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="anim-in opacity-0 gov-card p-6"
+          >
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 rounded-lg bg-[#0F2B46]/10 flex items-center justify-center">
+                <FileText className="w-4 h-4 text-[#0F2B46]" />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-900 tracking-wide">PERSONAL INFORMATION</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {infoItems.map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + i * 0.06 }}
+                  className={`flex items-start gap-3 p-4 rounded-xl border ${item.bg} ${item.border} transition-all hover:shadow-sm`}
+                >
+                  <div className="p-2 rounded-lg bg-white border border-slate-200 shadow-sm shrink-0">
+                    <item.icon className={`w-4 h-4 ${item.color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">{item.label}</p>
+                    <p className={`text-sm font-semibold ${item.color} truncate`}>{item.value}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{item.sublabel}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Family Context - Enhanced */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+            className="anim-in opacity-0 gov-card p-6"
+          >
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                <Home className="w-4 h-4 text-amber-600" />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-900 tracking-wide">FAMILY CONTEXT</h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: 'Family Head', value: `${member.family.headName}`, telugu: member.family.headNameTelugu, icon: Users, color: 'text-[#0F2B46]' },
+                { label: 'PDF Number', value: member.family.pdfNumber, icon: FileText, color: 'text-amber-700', isGovBadge: true },
+                { label: 'Village', value: member.family.village.name, telugu: member.family.village.nameTelugu, icon: MapPin, color: 'text-slate-700' },
+                { label: 'Mandal', value: member.family.village.mandal.name, telugu: member.family.village.mandal.nameTelugu, icon: Eye, color: 'text-slate-700', accent: true },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center justify-between p-3.5 bg-[#F8FAFC] rounded-xl border border-slate-100 hover:border-slate-200 transition-all">
+                  <span className="text-xs text-slate-400 flex items-center gap-2">
+                    <item.icon className="w-3.5 h-3.5" />
+                    {item.label}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {item.isGovBadge ? (
+                      <span className="gov-badge px-2.5 py-1 rounded-md border bg-amber-50 border-amber-200 text-amber-700 font-semibold tracking-wider">
+                        {item.value}
+                      </span>
+                    ) : (
+                      <span className={`text-sm font-medium ${item.color}`}>
+                        {item.value}
+                        {item.telugu && <span className="text-slate-400 ml-1.5 text-xs">({item.telugu})</span>}
+                      </span>
+                    )}
+                    {item.accent && (
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: accentColor }} />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* View Family Button */}
+            <button
+              onClick={() => navigateToFamily(member.family.pdfNumber, member.family.id)}
+              className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-[#0F2B46] hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+            >
+              <Eye className="w-4 h-4" />
+              View Full Family Details
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </motion.div>
+
+          {/* Help Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.6 }}
+            className="anim-in opacity-0 bg-[#0F2B46]/5 border border-[#0F2B46]/10 rounded-xl p-5 text-center"
+          >
+            <p className="text-xs text-slate-500">
+              Need to update member information? Contact the <span className="font-semibold text-[#0F2B46]">Mandal Revenue Office</span> or visit the nearest <span className="font-semibold text-[#0F2B46]">Meeseva Center</span>.
+            </p>
+          </motion.div>
         </div>
-      </div>
       </div>
       <GovFooter />
     </div>
