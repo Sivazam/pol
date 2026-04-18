@@ -339,119 +339,91 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
     }
   }, []);
 
+  // Animate title card (used by both globe path and fallback)
+  const animateTitleCard = useCallback(() => {
+    const tl = gsap.timeline();
+    tl.fromTo(titleRef.current, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' });
+    tl.fromTo(subtitleRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.5');
+    setTimeout(() => {
+      gsap.fromTo(buttonRef.current, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'back.out(1.7)' });
+    }, 1000);
+  }, []);
+
   // Globe setup & cinematic animation sequence
   useEffect(() => {
-    if (webglFailed) return;
+    if (webglFailed) {
+      // If WebGL failed, show title card immediately
+      const t = setTimeout(animateTitleCard, 500);
+      return () => clearTimeout(t);
+    }
 
     const timeouts: NodeJS.Timeout[] = [];
+    let globeInitialized = false;
 
-    // Wait for globe to mount
+    // Wait for globe to mount (max 5 seconds)
     const waitForGlobe = setInterval(() => {
-      if (!globeRef.current) return;
-      clearInterval(waitForGlobe);
+      if (globeRef.current) {
+        clearInterval(waitForGlobe);
+        globeInitialized = true;
 
-      try {
-        // Configure globe appearance
-        globeRef.current
-          .globeImageUrl(
-            'https://unpkg.com/globe.gl/example/img/earth-blue-marble.jpg'
-          )
-          .bumpImageUrl(
-            'https://unpkg.com/globe.gl/example/img/earth-topology.png'
-          )
-          .atmosphereColor('#1E90FF')
-          .atmosphereAltitude(0.15)
-          .backgroundColor('#020818')
-          .pointsData(POLAVARAM_POINTS)
-          .pointAltitude(0.01)
-          .pointColor(() => '#F59E0B')
-          .pointRadius(0.5)
-          .pointsMerge(false);
+        try {
+          globeRef.current
+            .globeImageUrl('https://unpkg.com/globe.gl/example/img/earth-blue-marble.jpg')
+            .bumpImageUrl('https://unpkg.com/globe.gl/example/img/earth-topology.png')
+            .atmosphereColor('#1E90FF')
+            .atmosphereAltitude(0.15)
+            .backgroundColor('#020818')
+            .pointsData(POLAVARAM_POINTS)
+            .pointAltitude(0.01)
+            .pointColor(() => '#F59E0B')
+            .pointRadius(0.5)
+            .pointsMerge(false);
 
-        // Start with auto-rotation
-        globeRef.current.controls().autoRotate = true;
-        globeRef.current.controls().autoRotateSpeed = 0.5;
+          globeRef.current.controls().autoRotate = true;
+          globeRef.current.controls().autoRotateSpeed = 0.5;
 
-        // Step 1: After 1.5s, stop rotation and zoom to India
-        const t1 = setTimeout(() => {
-          if (!globeRef.current) return;
-          globeRef.current.controls().autoRotate = false;
-          globeRef.current.pointOfView(
-            { lat: ANDHRA_PRADESH.lat, lng: ANDHRA_PRADESH.lng, altitude: 1.5 },
-            3000
-          );
-        }, 1500);
-        timeouts.push(t1);
-
-        // Step 2: After zoom to AP completes (~4.5s), zoom to Polavaram
-        const t2 = setTimeout(() => {
-          if (!globeRef.current) return;
-          globeRef.current.pointOfView(
-            {
-              lat: POLAVARAM_DAM.lat,
-              lng: POLAVARAM_DAM.lng,
-              altitude: 0.8,
-            },
-            3000
-          );
-
-          // Show pulsing point with higher altitude after zoom
-          const t3 = setTimeout(() => {
+          const t1 = setTimeout(() => {
             if (!globeRef.current) return;
-            globeRef.current
-              .pointsData(POLAVARAM_POINTS)
-              .pointAltitude(0.04)
-              .pointRadius(0.8);
-          }, 2000);
-          timeouts.push(t3);
-        }, 4500);
-        timeouts.push(t2);
+            globeRef.current.controls().autoRotate = false;
+            globeRef.current.pointOfView({ lat: ANDHRA_PRADESH.lat, lng: ANDHRA_PRADESH.lng, altitude: 1.5 }, 3000);
+          }, 1500);
+          timeouts.push(t1);
 
-        // Step 3: Show title card after globe animation completes (~8s total)
-        const t4 = setTimeout(() => {
-          const tl = gsap.timeline();
+          const t2 = setTimeout(() => {
+            if (!globeRef.current) return;
+            globeRef.current.pointOfView({ lat: POLAVARAM_DAM.lat, lng: POLAVARAM_DAM.lng, altitude: 0.8 }, 3000);
+            const t3 = setTimeout(() => {
+              if (!globeRef.current) return;
+              globeRef.current.pointsData(POLAVARAM_POINTS).pointAltitude(0.04).pointRadius(0.8);
+            }, 2000);
+            timeouts.push(t3);
+          }, 4500);
+          timeouts.push(t2);
 
-          tl.fromTo(
-            titleRef.current,
-            { opacity: 0, y: 50 },
-            { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' }
-          );
-
-          // Subtitle fades in 0.5s after title
-          tl.fromTo(
-            subtitleRef.current,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
-            '-=0.5'
-          );
-
-          // Button glows in 1s after subtitle
-          const t5 = setTimeout(() => {
-            gsap.fromTo(
-              buttonRef.current,
-              { opacity: 0, scale: 0.9 },
-              {
-                opacity: 1,
-                scale: 1,
-                duration: 0.6,
-                ease: 'back.out(1.7)',
-              }
-            );
-          }, 1000);
-          timeouts.push(t5);
-        }, 7500);
-        timeouts.push(t4);
-      } catch (e) {
-        console.warn('Globe setup failed:', e);
-        setWebglFailed(true);
+          const t4 = setTimeout(animateTitleCard, 7500);
+          timeouts.push(t4);
+        } catch (e) {
+          console.warn('Globe setup failed:', e);
+          const tf = setTimeout(animateTitleCard, 500);
+          timeouts.push(tf);
+        }
       }
     }, 200);
+
+    // Fallback: if globe doesn't initialize in 5s, show title card anyway
+    const fallbackTimeout = setTimeout(() => {
+      if (!globeInitialized) {
+        clearInterval(waitForGlobe);
+        animateTitleCard();
+      }
+    }, 5000);
+    timeouts.push(fallbackTimeout);
 
     return () => {
       clearInterval(waitForGlobe);
       timeouts.forEach(clearTimeout);
     };
-  }, [webglFailed]);
+  }, [webglFailed, animateTitleCard]);
 
   const particlesLoaded = useCallback(async () => {}, []);
 
