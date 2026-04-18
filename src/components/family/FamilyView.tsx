@@ -224,10 +224,10 @@ export default function FamilyView() {
       <SidebarNav />
 
       {/* Tricolor Bar */}
-      <div className="tricolor-bar w-full lg:pl-[52px]" />
+      <div className="tricolor-bar w-full" />
 
       {/* Top Nav - Navy gradient */}
-      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md lg:pl-[52px]">
+      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MobileMenuButton />
@@ -246,7 +246,7 @@ export default function FamilyView() {
           <ThemeToggle />
         </div>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 lg:pl-[52px]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6"><Breadcrumb /></div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">

@@ -225,9 +225,10 @@ function getSesStatus(globalIndex: number): string {
   return 'REJECTED';
 }
 
-// First Scheme Eligible: ~69% (9663/13961 ≈ 69.2%)
+// First Scheme Eligible: exactly 9,663 out of 13,961 (~69.2%)
+// We mark the first 9663 families (by global index) as eligible
 function isFirstSchemeEligible(globalIndex: number): boolean {
-  return (globalIndex % 100) < 69;
+  return globalIndex < 9663;
 }
 
 // ═══════════════════════════════════════════════════════════════════════

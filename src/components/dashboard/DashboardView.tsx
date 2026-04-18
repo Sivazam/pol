@@ -181,6 +181,8 @@ export default function DashboardView() {
   const [hoveredMandal, setHoveredMandal] = useState<string | null>(null);
   const [showDataTable, setShowDataTable] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const showFamilyTable = useAppStore((s) => s.showFamilyTable);
+  const setShowFamilyTable = useAppStore((s) => s.setShowFamilyTable);
 
   useEffect(() => {
     fetch('/api/stats')
@@ -333,11 +335,11 @@ export default function DashboardView() {
       {/* Sidebar Navigation */}
       <SidebarNav />
 
-      {/* Tricolor Bar */}
-      <div className="tricolor-bar w-full lg:pl-[52px]" />
+      {/* Tricolor Bar — full width, no sidebar offset since sidebar starts below navbar */}
+      <div className="tricolor-bar w-full" />
 
-      {/* Top Nav - Navy gradient */}
-      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md lg:pl-[52px]">
+      {/* Top Nav - Navy gradient — full width */}
+      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MobileMenuButton />
@@ -361,7 +363,8 @@ export default function DashboardView() {
         <NotificationBanner />
       </div>
 
-      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:pl-[68px] py-6 space-y-8 w-full">
+      <div className="flex-1 lg:pl-[52px]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 w-full">
         {/* Government Header Banner */}
         <div className="anim-in opacity-0 p-6 sm:p-7 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] text-white rounded-xl border border-[#0F2B46]/30 shadow-sm" style={{ background: 'linear-gradient(to right, #0F2B46, #1E3A5F)' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -837,12 +840,13 @@ export default function DashboardView() {
           </div>
         </div>
       </div>
+      </div>{/* end lg:pl-[52px] wrapper */}
 
       {/* Government Footer - has top border separator from GovFooter component */}
       <GovFooter />
 
       {/* Family Data Table Dialog */}
-      <DataTableView open={showDataTable} onOpenChange={setShowDataTable} />
+      <DataTableView open={showDataTable || showFamilyTable} onOpenChange={(open) => { setShowDataTable(open); if (!open) setShowFamilyTable(false); }} />
     </div>
   );
 }

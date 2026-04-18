@@ -799,3 +799,98 @@ Priority Recommendations for Next Phase:
 3. Implement MapLibre GL JS for interactive maps
 4. Add admin panel for data management
 5. Add time series charts for rehabilitation progress
+
+---
+Task ID: 1
+Agent: Sidebar Overlap Fix Agent
+Task: Fix sidebar overlap issues — main content areas hidden behind fixed 52px sidebar
+
+Work Log:
+- Read all 6 view components to identify the `flex-1` content wrapper divs missing sidebar padding
+- Fixed MandalView.tsx: Changed `<div className="flex-1">` to `<div className="flex-1 lg:pl-[52px]">` (line 260)
+- Fixed VillageView.tsx: Changed `<div className="flex-1">` to `<div className="flex-1 lg:pl-[52px]">` (line 243)
+- Fixed FamilyView.tsx: Changed `<div className="flex-1">` to `<div className="flex-1 lg:pl-[52px]">` (line 249)
+- Fixed MemberView.tsx: Changed `<div className="flex-1">` to `<div className="flex-1 lg:pl-[52px]">` (line 134)
+- Fixed RelocationView.tsx: Changed `<div className="flex-1">` to `<div className="flex-1 lg:pl-[52px]">` (line 137)
+- Fixed DashboardView.tsx: Changed `lg:pl-[68px]` to `lg:pl-[52px]` on content div (line 364) to match actual sidebar width
+- All lint checks pass with zero errors
+- Dev server compiles successfully
+
+Stage Summary:
+- All 6 views now have proper `lg:pl-[52px]` padding on their main content areas to offset the fixed 52px sidebar
+- DashboardView had an incorrect `lg:pl-[68px]` (52px sidebar + 16px extra), corrected to `lg:pl-[52px]` for consistency
+- Content no longer hidden behind the SidebarNav on desktop (lg breakpoint and above)
+- Mobile views unaffected (padding only applies at lg breakpoint)
+
+---
+Task ID: 2
+Agent: Sidebar Navigation Fix Agent
+Task: Fix sidebar navigation for views that require selection state (MandalView, VillageView, FamilyView, RelocationView)
+
+Work Log:
+- Read store.ts to understand current state management and setView implementation
+- Read SidebarNav.tsx to understand current handleNavClick and NAV_ITEMS
+- Read DashboardView.tsx to understand showDataTable state and DataTableView integration
+
+Problem:
+- Clicking "Mandals", "Villages", "Families", or "Relocation" in sidebar navigates to views that require selection state (selectedMandalId, selectedVillageId, selectedFamilyPdf, selectedFamilyId)
+- These views redirect back to dashboard when the required selection is null, causing a broken navigation experience
+
+Solution Implemented:
+
+1. Updated /src/lib/store.ts:
+   - Added `showFamilyTable: boolean` state field (default: false)
+   - Added `setShowFamilyTable: (val: boolean) => void` setter
+   - Modified `setView` to preserve `showFamilyTable` when navigating to dashboard, reset it when navigating away from dashboard:
+     `set({ view, showFamilyTable: view === 'dashboard' ? get().showFamilyTable : false })`
+
+2. Updated /src/components/shared/SidebarNav.tsx:
+   - Added `setShowFamilyTable` import from store
+   - Modified `handleNavClick` to handle views requiring selection state:
+     - 'mandal' and 'village': redirect to dashboard (user needs to pick a mandal/village first)
+     - 'family': redirect to dashboard AND set showFamilyTable=true (auto-opens DataTableView)
+     - 'relocation': redirect to dashboard (user needs to pick a family first)
+     - 'dashboard' and 'login': navigate as-is
+
+3. Updated /src/components/dashboard/DashboardView.tsx:
+   - Added `showFamilyTable` and `setShowFamilyTable` imports from store
+   - Changed DataTableView `open` prop from `showDataTable` to `showDataTable || showFamilyTable` (either local state or store flag opens the dialog)
+   - Changed `onOpenChange` handler to also clear `showFamilyTable` when closing: `(open) => { setShowDataTable(open); if (!open) setShowFamilyTable(false); }`
+   - Avoided useEffect with setState (lint rule: react-hooks/set-state-in-effect) by using derived `open` prop instead
+
+Lint Results:
+- `bun run lint` passes with zero errors
+
+Stage Summary:
+- Sidebar navigation now works correctly for all 6 nav items
+- "Mandals", "Villages", "Relocation" redirect to dashboard (where user can select the required entity)
+- "Families" auto-opens the DataTableView on the dashboard
+- "Dashboard" and "Admin" work as-is
+- showFamilyTable state is properly reset when navigating away from dashboard
+- No lint errors introduced
+---
+Task ID: 1
+Agent: main
+Task: Fix sidebar/top navbar collision, sidebar overlapping content, data numbers, and sidebar navigation
+
+Work Log:
+- Read and analyzed all 8+ view components and their layout patterns
+- Identified root cause: sidebar was `fixed left-0 top-0` covering full height including navbar area
+- Fixed SidebarNav: changed desktop sidebar to `fixed left-0 top-[59px] bottom-0` (below tricolor+navbar)
+- Removed sidebar's internal tricolor bar and logo header (redundant with page navbar)
+- Improved sidebar navigation: Mandals/Villages/Relocation now navigate to previous selection if available
+- Added getIsActive() helper for correct active state highlighting in sidebar
+- Fixed all 6 view components: removed `lg:pl-[52px]` from tricolor bar and top navbar (they now span full width)
+- Content wrappers retain `lg:pl-[52px]` to account for sidebar
+- Fixed DashboardView: added proper closing div for the `lg:pl-[52px]` content wrapper
+- Fixed GovFooter: added `lg:pl-[52px]` to footer for sidebar offset
+- Updated seed.ts: changed isFirstSchemeEligible() to produce exactly 9,663 eligible families
+- Ran db:push and db:seed, verified API returns correct numbers (firstSchemeEligible: 9663)
+- Lint check passed successfully
+
+Stage Summary:
+- Sidebar no longer collides with top navbar (starts at top-[59px])
+- Sidebar no longer overlaps page content (content has proper lg:pl-[52px])
+- All view layouts standardized: tricolor bar + navbar full-width, content has sidebar offset
+- Data numbers confirmed: 13,961 families, 9,663 first scheme eligible, 3 mandals, 30 villages
+- Navigation improved: sidebar items navigate contextually based on selection state

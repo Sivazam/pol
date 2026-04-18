@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { useAppStore, AppView } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, Map, Building2, Users, Search,
-  LogIn, X, Menu, ChevronRight, Home, LandPlot,
+  LayoutDashboard, Map, Building2, Users,
+  LogIn, X, ChevronRight, Home, LandPlot,
 } from 'lucide-react';
 import { PROJECT_STATS } from '@/lib/constants';
 
@@ -30,6 +30,10 @@ export default function SidebarNav() {
   const setView = useAppStore((s) => s.setView);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
+  const setShowFamilyTable = useAppStore((s) => s.setShowFamilyTable);
+  const selectedMandalId = useAppStore((s) => s.selectedMandalId);
+  const selectedVillageId = useAppStore((s) => s.selectedVillageId);
+  const selectedFamilyId = useAppStore((s) => s.selectedFamilyId);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
@@ -37,8 +41,48 @@ export default function SidebarNav() {
   if (view === 'globe' || view === 'login') return null;
 
   const handleNavClick = (navView: AppView) => {
-    setView(navView);
+    if (navView === 'dashboard') {
+      setView('dashboard');
+    } else if (navView === 'mandal') {
+      // If a mandal is selected, navigate to it; otherwise go to dashboard
+      if (selectedMandalId) {
+        setView('mandal');
+      } else {
+        setView('dashboard');
+      }
+    } else if (navView === 'village') {
+      // If a village is selected, navigate to it; otherwise go to dashboard
+      if (selectedVillageId) {
+        setView('village');
+      } else {
+        setView('dashboard');
+      }
+    } else if (navView === 'family') {
+      // Open the family data table from dashboard
+      setView('dashboard');
+      setShowFamilyTable(true);
+    } else if (navView === 'relocation') {
+      // If a family is selected, navigate to relocation; otherwise go to dashboard
+      if (selectedFamilyId) {
+        setView('relocation');
+      } else {
+        setView('dashboard');
+      }
+    } else {
+      setView(navView);
+    }
     setSidebarOpen(false);
+  };
+
+  // Determine which nav item should appear "active"
+  const getIsActive = (navView: AppView): boolean => {
+    if (navView === 'dashboard') return view === 'dashboard';
+    if (navView === 'mandal') return view === 'mandal';
+    if (navView === 'village') return view === 'village';
+    if (navView === 'family') return view === 'family' || view === 'member';
+    if (navView === 'relocation') return view === 'relocation';
+    if (navView === 'login') return view === 'login';
+    return false;
   };
 
   return (
@@ -67,7 +111,7 @@ export default function SidebarNav() {
             className="fixed left-0 top-0 bottom-0 w-[270px] bg-gradient-to-b from-[#0F2B46] to-[#1E3A5F] z-50 lg:hidden shadow-2xl"
           >
             {/* Tricolor accent */}
-            <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%)' }} />
+            <div className="h-[3px] w-full shrink-0" style={{ background: 'linear-gradient(90deg, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%)' }} />
 
             {/* Header */}
             <div className="px-5 py-4 border-b border-white/10">
@@ -86,7 +130,7 @@ export default function SidebarNav() {
             {/* Navigation items */}
             <nav className="py-3 px-3 space-y-1">
               {NAV_ITEMS.map((item) => {
-                const isActive = view === item.view;
+                const isActive = getIsActive(item.view);
                 const Icon = item.icon;
                 return (
                   <button
@@ -117,27 +161,16 @@ export default function SidebarNav() {
         )}
       </AnimatePresence>
 
-      {/* Desktop sidebar - slim icon rail */}
+      {/* Desktop sidebar - slim icon rail that sits BELOW the top navbar */}
       <aside
-        className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[52px] flex-col bg-gradient-to-b from-[#0F2B46] to-[#1E3A5F] z-40 border-r border-white/10 transition-all duration-300 hover:w-[200px] group"
+        className="hidden lg:flex fixed left-0 top-[59px] bottom-0 w-[52px] flex-col bg-gradient-to-b from-[#0F2B46] to-[#1E3A5F] z-30 border-r border-white/10 transition-all duration-300 hover:w-[200px] group"
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => { setExpanded(false); setHoveredItem(null); }}
       >
-        {/* Tricolor accent */}
-        <div className="h-[3px] w-full shrink-0" style={{ background: 'linear-gradient(90deg, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%)' }} />
-
-        {/* Logo area */}
-        <div className="h-14 flex items-center justify-center border-b border-white/10 shrink-0">
-          <Home className="w-5 h-5 text-amber-400 shrink-0" />
-          <span className="ml-3 text-xs font-bold text-white tracking-wider whitespace-nowrap overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-            R&R
-          </span>
-        </div>
-
         {/* Navigation items */}
         <nav className="flex-1 py-2 px-1.5 space-y-1 overflow-y-auto overflow-x-hidden">
           {NAV_ITEMS.map((item) => {
-            const isActive = view === item.view;
+            const isActive = getIsActive(item.view);
             const Icon = item.icon;
             const isHovered = hoveredItem === item.view;
             return (

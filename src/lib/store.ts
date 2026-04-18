@@ -28,6 +28,8 @@ interface AppState {
   selectMember: (id: string) => void;
   setAuthenticated: (val: boolean) => void;
   setGlobeAnimComplete: (val: boolean) => void;
+  showFamilyTable: boolean;
+  setShowFamilyTable: (val: boolean) => void;
   setSidebarOpen: (val: boolean) => void;
   navigateToMandal: (mandalId: string) => void;
   navigateToVillage: (villageId: string) => void;
@@ -49,10 +51,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAuthenticated: false,
   globeAnimComplete: false,
   sidebarOpen: false,
+  showFamilyTable: false,
 
   setView: (view) => {
     viewHistory.push(view);
-    set({ view });
+    set({ view, showFamilyTable: view === 'dashboard' ? get().showFamilyTable : false });
     // Reset scroll position when navigating between views
     if (typeof window !== 'undefined') {
       window.scrollTo(0, 0);
@@ -65,6 +68,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectMember: (id) => set({ selectedMemberId: id }),
   setAuthenticated: (val) => set({ isAuthenticated: val }),
   setGlobeAnimComplete: (val) => set({ globeAnimComplete: val }),
+  setShowFamilyTable: (val) => set({ showFamilyTable: val }),
   setSidebarOpen: (val) => set({ sidebarOpen: val }),
 
   navigateToMandal: (mandalId) => {
