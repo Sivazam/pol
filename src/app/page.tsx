@@ -30,7 +30,7 @@ export default function Home() {
   const ViewComponent = viewComponents[view] || GlobeLanding;
 
   return (
-    <main className="w-full min-h-screen bg-[#0A0F1E]">
+    <main className="w-full min-h-screen bg-[#F0F4F8]">
       <AnimatePresence mode="wait">
         <motion.div
           key={view}

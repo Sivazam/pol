@@ -4,22 +4,23 @@ export const ANDHRA_PRADESH = { lat: 17.0005, lng: 81.8040 };
 export const INDIA = { lat: 20.5937, lng: 78.9629 };
 
 export const MANDAL_COLORS = {
-  POL: '#F59E0B', // Amber
-  VEL: '#14B8A6', // Teal
-  BUT: '#F97316', // Coral/Orange
+  POL: '#D97706', // Amber-600
+  VEL: '#0D9488', // Teal-600
+  BUT: '#EA580C', // Orange-600
 } as const;
 
+// Light theme status configurations
 export const SES_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  SURVEYED: { label: 'Surveyed', color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/30' },
-  VERIFIED: { label: 'Verified', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-  APPROVED: { label: 'Approved', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
-  REJECTED: { label: 'Rejected', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
+  SURVEYED: { label: 'Surveyed', color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-300' },
+  VERIFIED: { label: 'Verified', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-300' },
+  APPROVED: { label: 'Approved', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-300' },
+  REJECTED: { label: 'Rejected', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-300' },
 };
 
 export const ALLOTMENT_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  PENDING: { label: 'Pending', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-  ALLOTTED: { label: 'Allotted', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-  POSSESSION_GIVEN: { label: 'Possession Given', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
+  PENDING: { label: 'Pending', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-300' },
+  ALLOTTED: { label: 'Allotted', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-300' },
+  POSSESSION_GIVEN: { label: 'Possession Given', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-300' },
 };
 
 export const STATUS_TIMELINE = ['SURVEYED', 'VERIFIED', 'APPROVED', 'RELOCATED'] as const;
@@ -43,4 +44,16 @@ export const MANDAL_CODES = {
   POLAVARAM: 'POL',
   VELAIRPAD: 'VEL',
   BUTTAIGUDEM: 'BUT',
+} as const;
+
+// Government brand colors for light theme
+export const GOV_COLORS = {
+  navy: '#0F2B46',
+  navyLight: '#1E3A5F',
+  amber: '#D97706',
+  amberLight: '#FEF3C7',
+  green: '#15803D',
+  greenLight: '#DCFCE7',
+  saffron: '#FF9933',
+  tricolorGreen: '#138808',
 } as const;

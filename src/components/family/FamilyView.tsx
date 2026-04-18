@@ -99,10 +99,10 @@ export default function FamilyView() {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-[#0A0F1E] flex items-center justify-center">
+      <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Family</p>
+          <div className="w-12 h-12 border-2 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Family</p>
         </div>
       </div>
     );
@@ -110,8 +110,8 @@ export default function FamilyView() {
 
   if (!family) {
     return (
-      <div className="w-full min-h-screen bg-[#0A0F1E] flex items-center justify-center">
-        <p className="text-red-400">Family not found</p>
+      <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center">
+        <p className="text-red-600 font-medium">Family not found</p>
       </div>
     );
   }
@@ -122,44 +122,47 @@ export default function FamilyView() {
   const isRejected = family.sesStatus === 'REJECTED';
 
   return (
-    <div ref={containerRef} className="w-full min-h-screen bg-[#0A0F1E]">
-      {/* Top Nav */}
-      <div className="sticky top-0 z-50 bg-[#0A0F1E]/90 backdrop-blur-md border-b border-white/5">
+    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8]">
+      {/* Tricolor Bar */}
+      <div className="tricolor-bar" />
+
+      {/* Top Nav - Navy gradient */}
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={goBack} className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-1">
+            <button onClick={goBack} className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1">
               <ChevronLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span>
             </button>
-            <div className="w-px h-6 bg-white/10" />
-            <span className="text-sm text-gray-400">{family.village.mandal.name}</span>
-            <ChevronRight className="w-3 h-3 text-gray-600" />
-            <span className="text-sm text-gray-400">{family.village.name}</span>
-            <ChevronRight className="w-3 h-3 text-gray-600" />
-            <span className="text-sm font-medium" style={{ color: accentColor }}>{family.pdfNumber}</span>
+            <div className="w-px h-6 bg-white/20" />
+            <span className="text-sm text-white/60">{family.village.mandal.name}</span>
+            <ChevronRight className="w-3 h-3 text-white/40" />
+            <span className="text-sm text-white/60">{family.village.name}</span>
+            <ChevronRight className="w-3 h-3 text-white/40" />
+            <span className="text-sm font-medium text-amber-300">{family.pdfNumber}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-green-400 text-xs"><Activity className="w-3 h-3" /><span>LIVE</span></div>
+          <div className="flex items-center gap-1.5 text-green-300 text-xs"><Activity className="w-3 h-3" /><span>LIVE</span></div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Header Section */}
-        <div className="anim-in opacity-0 glow-card p-6">
+        <div className="anim-in opacity-0 gov-card p-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <span className="gov-badge px-3 py-1.5 rounded-md border bg-amber-500/10 border-amber-500/30 text-amber-400 tracking-widest text-sm">
+                <span className="gov-badge px-3 py-1.5 rounded-md border bg-amber-50 border-amber-300 text-amber-700 tracking-widest text-sm font-semibold">
                   {family.pdfNumber}
                 </span>
                 {family.firstSchemeEligible && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-amber-400 bg-amber-500/10 border border-amber-500/30">
-                    <Star className="w-3 h-3 fill-amber-400" /> First Scheme Eligible
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-amber-700 bg-amber-50 border border-amber-300">
+                    <Star className="w-3 h-3 fill-amber-600 text-amber-600" /> First Scheme Eligible
                   </span>
                 )}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">{family.headName}</h1>
-              <p className="text-gray-400 mt-1">{family.headNameTelugu}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                <MapPin className="w-3 h-3 inline mr-1" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{family.headName}</h1>
+              <p className="text-slate-500 mt-1">{family.headNameTelugu}</p>
+              <p className="text-xs text-slate-400 mt-2">
+                <MapPin className="w-3 h-3 inline mr-1 text-slate-400" />
                 {family.village.name} ({family.village.nameTelugu}), {family.village.mandal.name} Mandal
               </p>
             </div>
@@ -170,8 +173,8 @@ export default function FamilyView() {
         </div>
 
         {/* Status Timeline */}
-        <div className="anim-in opacity-0 glow-card p-6">
-          <h3 className="text-sm font-medium text-white tracking-wide mb-6">STATUS TIMELINE</h3>
+        <div className="anim-in opacity-0 gov-card p-6">
+          <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-6">STATUS TIMELINE</h3>
           <div className="relative">
             <div className="flex items-center justify-between">
               {TIMELINE_STEPS.map((step, i) => {
@@ -181,13 +184,21 @@ export default function FamilyView() {
                 return (
                   <div key={step.key} className="flex flex-col items-center relative z-10">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                      isCompleted ? `border-green-500 bg-green-500/20` :
-                      isCurrent ? `border-amber-500 bg-amber-500/20 animate-pulse` :
-                      'border-gray-700 bg-gray-800'
+                      isCompleted && !isCurrent ? 'border-green-600 bg-green-600' :
+                      isCurrent ? 'border-amber-600 bg-amber-500 animate-pulse shadow-lg shadow-amber-200' :
+                      'border-slate-300 bg-slate-100'
                     }`}>
-                      <Icon className={`w-4 h-4 ${isCompleted ? 'text-green-400' : isCurrent ? 'text-amber-400' : 'text-gray-600'}`} />
+                      <Icon className={`w-4 h-4 ${
+                        isCompleted && !isCurrent ? 'text-white' :
+                        isCurrent ? 'text-white' :
+                        'text-slate-400'
+                      }`} />
                     </div>
-                    <span className={`text-xs mt-2 ${isCompleted ? 'text-green-400' : isCurrent ? 'text-amber-400' : 'text-gray-600'}`}>
+                    <span className={`text-xs mt-2 font-medium ${
+                      isCompleted && !isCurrent ? 'text-green-700' :
+                      isCurrent ? 'text-amber-700' :
+                      'text-slate-400'
+                    }`}>
                       {step.label}
                     </span>
                   </div>
@@ -195,29 +206,31 @@ export default function FamilyView() {
               })}
             </div>
             {/* Progress line */}
-            <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-700 -z-0">
+            <div className="absolute top-5 left-0 right-0 h-0.5 bg-slate-200 -z-0">
               {!isRejected && (
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${(timelinePos / 3) * 100}%` }}
                   transition={{ duration: 1, delay: 0.3 }}
-                  className="h-full bg-green-500"
+                  className="h-full bg-green-600"
                 />
               )}
               {isRejected && (
-                <div className="h-full bg-red-500 w-full opacity-50" />
+                <div className="h-full bg-red-500 w-full" />
               )}
             </div>
           </div>
           {isRejected && (
-            <p className="mt-4 text-xs text-red-400 text-center">Application rejected — review required</p>
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+              <p className="text-xs text-red-700 font-medium">Application rejected — review required</p>
+            </div>
           )}
         </div>
 
         {/* Family Details */}
         <div className="anim-in opacity-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="glow-card p-5">
-            <h3 className="text-sm font-medium text-white tracking-wide mb-4">FAMILY DETAILS</h3>
+          <div className="gov-card p-5">
+            <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">FAMILY DETAILS</h3>
             <div className="space-y-3">
               {[
                 { label: 'Caste Category', value: family.caste || 'N/A', icon: Users },
@@ -226,16 +239,16 @@ export default function FamilyView() {
                 { label: 'Total Members', value: String(family.members.length), icon: Users },
               ].map((item, i) => (
                 <div key={i} className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400 flex items-center gap-2">
-                    <item.icon className="w-3.5 h-3.5" />{item.label}
+                  <span className="text-xs text-slate-500 flex items-center gap-2">
+                    <item.icon className="w-3.5 h-3.5 text-slate-400" />{item.label}
                   </span>
-                  <span className="text-sm text-white font-medium">{item.value}</span>
+                  <span className="text-sm text-slate-900 font-medium">{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div className="glow-card p-5">
-            <h3 className="text-sm font-medium text-white tracking-wide mb-4">NEW PLOT STATUS</h3>
+          <div className="gov-card p-5">
+            <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">NEW PLOT STATUS</h3>
             {family.newPlot ? (
               <div className="space-y-3">
                 {[
@@ -247,15 +260,15 @@ export default function FamilyView() {
                   const allotCfg = i === 3 ? ALLOTMENT_STATUS_CONFIG[item.value] : null;
                   return (
                     <div key={i} className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400 flex items-center gap-2">
-                        <item.icon className="w-3.5 h-3.5" />{item.label}
+                      <span className="text-xs text-slate-500 flex items-center gap-2">
+                        <item.icon className="w-3.5 h-3.5 text-slate-400" />{item.label}
                       </span>
                       {allotCfg ? (
                         <span className={`text-xs font-medium px-2 py-0.5 rounded ${allotCfg.color} ${allotCfg.bg} border ${allotCfg.border}`}>
                           {allotCfg.label}
                         </span>
                       ) : (
-                        <span className="text-sm text-white font-medium">{item.value}</span>
+                        <span className="text-sm text-slate-900 font-medium">{item.value}</span>
                       )}
                     </div>
                   );
@@ -263,21 +276,21 @@ export default function FamilyView() {
               </div>
             ) : (
               <div className="flex flex-col items-center py-6 text-center">
-                <Clock className="w-8 h-8 text-gray-600 mb-2" />
-                <p className="text-sm text-gray-400">No plot allotted yet</p>
-                <p className="text-xs text-gray-600 mt-1">Pending SES verification</p>
+                <Clock className="w-8 h-8 text-slate-300 mb-2" />
+                <p className="text-sm text-slate-500">No plot allotted yet</p>
+                <p className="text-xs text-slate-400 mt-1">Pending SES verification</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Members Table */}
-        <div className="anim-in opacity-0 glow-card p-5">
-          <h3 className="text-sm font-medium text-white tracking-wide mb-4">FAMILY MEMBERS ({family.members.length})</h3>
+        <div className="anim-in opacity-0 gov-card p-5">
+          <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">FAMILY MEMBERS ({family.members.length})</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-xs text-gray-500 border-b border-white/5">
+                <tr className="text-xs text-slate-400 border-b border-slate-200">
                   <th className="text-left pb-3 font-medium">Name</th>
                   <th className="text-left pb-3 font-medium hidden sm:table-cell">Relation</th>
                   <th className="text-left pb-3 font-medium">Age</th>
@@ -294,33 +307,35 @@ export default function FamilyView() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="border-b border-white/5 hover:bg-white/[0.02] cursor-pointer group"
+                    className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer group transition-colors"
                     onClick={() => navigateToMember(m.id)}
                   >
                     <td className="py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: `${accentColor}20`, color: accentColor }}>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-amber-100 text-amber-700">
                           {m.name.charAt(0)}
                         </div>
                         <div>
-                          <p className="text-white text-sm">{m.name}</p>
-                          {m.nameTelugu && <p className="text-gray-500 text-xs">{m.nameTelugu}</p>}
+                          <p className="text-slate-900 text-sm font-medium">{m.name}</p>
+                          {m.nameTelugu && <p className="text-slate-400 text-xs">{m.nameTelugu}</p>}
                         </div>
                       </div>
                     </td>
                     <td className="py-3 hidden sm:table-cell">
-                      <span className={`text-xs px-2 py-0.5 rounded ${m.relation === 'Head' ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-500/10 text-gray-400'}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                        m.relation === 'Head' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                      }`}>
                         {m.relation}
                       </span>
                     </td>
-                    <td className="py-3 text-gray-300">{m.age}{m.isMinor ? ' (Minor)' : ''}</td>
-                    <td className="py-3 hidden md:table-cell text-gray-400">{m.gender}</td>
+                    <td className="py-3 text-slate-700">{m.age}{m.isMinor ? ' (Minor)' : ''}</td>
+                    <td className="py-3 hidden md:table-cell text-slate-500">{m.gender}</td>
                     <td className="py-3 hidden lg:table-cell">
-                      <span className="gov-badge text-gray-500">{m.aadhar || 'N/A'}</span>
+                      <span className="gov-badge text-slate-400">{m.aadhar || 'N/A'}</span>
                     </td>
-                    <td className="py-3 hidden md:table-cell text-gray-400">{m.occupation || 'N/A'}</td>
+                    <td className="py-3 hidden md:table-cell text-slate-500">{m.occupation || 'N/A'}</td>
                     <td className="py-3 text-right">
-                      <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-gray-300 transition-colors inline" />
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 transition-colors inline" />
                     </td>
                   </motion.tr>
                 ))}
@@ -330,20 +345,20 @@ export default function FamilyView() {
         </div>
 
         {/* Action Bar */}
-        <div className="anim-in opacity-0 flex flex-wrap gap-3">
+        <div className="anim-in opacity-0 flex flex-wrap gap-3 pb-6">
           {family.newPlot && (
             <button
               onClick={() => navigateToRelocation(family.id)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg text-sm hover:bg-green-500/20 transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-white border border-green-300 text-green-700 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors shadow-sm"
             >
               <MapPin className="w-4 h-4" /> View New Plot
               <ArrowRight className="w-3 h-3" />
             </button>
           )}
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] border border-white/8 text-gray-300 rounded-lg text-sm hover:border-white/20 transition-colors">
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
             <Download className="w-4 h-4" /> Download Data
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] border border-white/8 text-gray-300 rounded-lg text-sm hover:border-white/20 transition-colors">
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
             <Printer className="w-4 h-4" /> Print SES Sheet
           </button>
         </div>

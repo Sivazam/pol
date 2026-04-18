@@ -89,6 +89,8 @@ function GlobeFallback({ onEnter }: { onEnter: () => void }) {
 
   return (
     <div className="relative w-full h-screen overflow-hidden" style={{ backgroundColor: '#020818' }}>
+      {/* Tricolor Bar at top */}
+      <div className="absolute top-0 left-0 right-0 z-[5] h-[3px]" style={{ background: 'linear-gradient(90deg, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%)' }} />
       {/* Static map background */}
       <div className="absolute inset-0">
         <div

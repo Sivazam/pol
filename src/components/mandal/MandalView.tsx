@@ -1,86 +1,98 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import { SES_STATUS_CONFIG } from '@/lib/constants';
 import CountUp from 'react-countup';
 import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import {
-  ChevronRight,
-  ChevronLeft,
-  Activity,
-  MapPin,
-  Users,
-  Home,
-  CheckCircle2,
+  ChevronRight, ChevronLeft, Activity, MapPin, Users, Home, CheckCircle2,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
-/*  SES hex color map for inline styles                                */
+/*  SES hex color map for inline styles (light theme)                  */
 /* ------------------------------------------------------------------ */
 const SES_HEX_COLORS: Record<string, string> = {
-  SURVEYED: '#6B7280', // gray-500
-  VERIFIED: '#F59E0B', // amber-500
-  APPROVED: '#22C55E', // green-500
-  REJECTED: '#EF4444', // red-500
+  SURVEYED: '#94A3B8',
+  VERIFIED: '#D97706',
+  APPROVED: '#16A34A',
+  REJECTED: '#DC2626',
 };
+
+/* ------------------------------------------------------------------ */
+/*  GeoJSON Mandal boundaries (embedded)                               */
+/* ------------------------------------------------------------------ */
+const MANDAL_GEOJSON: Record<string, { coords: number[][] }> = {
+  POL: { coords: [[81.638,17.285],[81.655,17.295],[81.678,17.300],[81.700,17.298],[81.720,17.290],[81.738,17.280],[81.750,17.265],[81.758,17.248],[81.755,17.230],[81.748,17.218],[81.735,17.208],[81.720,17.200],[81.700,17.198],[81.682,17.202],[81.668,17.210],[81.655,17.222],[81.645,17.238],[81.638,17.255],[81.635,17.270],[81.638,17.285]] },
+  VEL: { coords: [[81.540,17.358],[81.558,17.368],[81.580,17.375],[81.605,17.378],[81.628,17.372],[81.648,17.360],[81.662,17.345],[81.672,17.328],[81.678,17.310],[81.672,17.295],[81.660,17.282],[81.645,17.272],[81.628,17.265],[81.608,17.262],[81.588,17.265],[81.572,17.275],[81.558,17.290],[81.548,17.308],[81.542,17.325],[81.538,17.342],[81.540,17.358]] },
+  BUT: { coords: [[81.660,17.200],[81.678,17.208],[81.700,17.210],[81.722,17.205],[81.742,17.195],[81.758,17.182],[81.772,17.168],[81.782,17.150],[81.785,17.132],[81.778,17.115],[81.765,17.102],[81.748,17.092],[81.728,17.088],[81.708,17.090],[81.690,17.098],[81.675,17.110],[81.662,17.125],[81.652,17.142],[81.648,17.160],[81.650,17.178],[81.655,17.192],[81.660,17.200]] },
+};
+
+const GODAVARI_PATH = [
+  [81.540,17.360],[81.558,17.340],[81.575,17.320],[81.595,17.300],
+  [81.615,17.280],[81.635,17.265],[81.655,17.250],[81.675,17.238],
+  [81.695,17.225],[81.710,17.210],[81.712,17.195],[81.708,17.180],
+  [81.698,17.165],[81.688,17.148],[81.678,17.130],[81.670,17.115],
+  [81.662,17.098],[81.655,17.082],[81.650,17.065],
+];
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
 interface VillageData {
-  id: string;
-  name: string;
-  nameTelugu: string;
-  code: string;
-  latitude: number;
-  longitude: number;
-  mandalId: string;
-  totalFamilies: number;
-  firstSchemeCount: number;
+  id: string; name: string; nameTelugu: string; code: string;
+  latitude: number; longitude: number; mandalId: string;
+  totalFamilies: number; firstSchemeCount: number;
   statusBreakdown: Record<string, number>;
   mandal: { name: string; color: string };
 }
 
 interface MandalInfo {
-  id: string;
-  name: string;
-  nameTelugu: string;
-  code: string;
-  latitude: number;
-  longitude: number;
-  color: string;
-  familyCount: number;
-  firstSchemeCount: number;
+  id: string; name: string; nameTelugu: string; code: string;
+  latitude: number; longitude: number; color: string;
+  familyCount: number; firstSchemeCount: number;
   statusBreakdown: Record<string, number>;
 }
 
-interface TooltipInfo {
-  village: VillageData;
-  x: number;
-  y: number;
-}
+interface TooltipInfo { village: VillageData; x: number; y: number; }
 
 /* ------------------------------------------------------------------ */
 /*  SVG coordinate helpers                                             */
 /* ------------------------------------------------------------------ */
 
-function latLngToSvg(
-  lat: number,
-  lng: number,
-  bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number },
-  width: number,
-  height: number,
-  padding: number
-) {
+function computeBounds(villages: VillageData[], geoCoords: number[][]) {
+  const lats = [...villages.map(v => v.latitude), ...geoCoords.map(c => c[1])];
+  const lngs = [...villages.map(v => v.longitude), ...geoCoords.map(c => c[0])];
+  return {
+    minLat: Math.min(...lats) - 0.015,
+    maxLat: Math.max(...lats) + 0.015,
+    minLng: Math.min(...lngs) - 0.015,
+    maxLng: Math.max(...lngs) + 0.015,
+  };
+}
+
+function projectCoord(lng: number, lat: number, bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }, w: number, h: number, pad: number) {
   const xRange = bounds.maxLng - bounds.minLng || 0.01;
   const yRange = bounds.maxLat - bounds.minLat || 0.01;
-  const x = padding + ((lng - bounds.minLng) / xRange) * (width - 2 * padding);
-  const y =
-    padding + ((bounds.maxLat - lat) / yRange) * (height - 2 * padding);
+  const x = pad + ((lng - bounds.minLng) / xRange) * (w - 2 * pad);
+  const y = pad + ((bounds.maxLat - lat) / yRange) * (h - 2 * pad);
   return { x, y };
+}
+
+function polygonToSvgPath(coords: number[][], bounds: ReturnType<typeof computeBounds>, w: number, h: number, pad: number) {
+  return coords.map((c, i) => {
+    const p = projectCoord(c[0], c[1], bounds, w, h, pad);
+    return `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+  }).join(' ') + ' Z';
+}
+
+function lineToSvgPath(coords: number[][], bounds: ReturnType<typeof computeBounds>, w: number, h: number, pad: number) {
+  return coords.map((c, i) => {
+    const p = projectCoord(c[0], c[1], bounds, w, h, pad);
+    return `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+  }).join(' ');
 }
 
 /* ------------------------------------------------------------------ */
@@ -97,17 +109,16 @@ export default function MandalView() {
   const [mandalInfo, setMandalInfo] = useState<MandalInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
+  const [hoveredVillage, setHoveredVillage] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  /* ---- redirect if no mandal selected ---- */
+  /* redirect if no mandal selected */
   useEffect(() => {
-    if (!selectedMandalId) {
-      setView('dashboard');
-    }
+    if (!selectedMandalId) setView('dashboard');
   }, [selectedMandalId, setView]);
 
-  /* ---- fetch mandal info ---- */
+  /* fetch mandal info */
   useEffect(() => {
     if (!selectedMandalId) return;
     fetch('/api/mandals')
@@ -119,7 +130,7 @@ export default function MandalView() {
       .catch(() => {});
   }, [selectedMandalId]);
 
-  /* ---- fetch villages ---- */
+  /* fetch villages */
   useEffect(() => {
     if (!selectedMandalId) return;
     let cancelled = false;
@@ -130,33 +141,24 @@ export default function MandalView() {
         setVillages(Array.isArray(data) ? data : []);
         setLoading(false);
       })
-      .catch(() => {
-        if (!cancelled) setLoading(false);
-      });
+      .catch(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [selectedMandalId]);
 
-  /* ---- GSAP entrance ---- */
+  /* GSAP entrance */
   useEffect(() => {
     if (!loading && containerRef.current) {
       const els = containerRef.current.querySelectorAll('.anim-in');
-      gsap.fromTo(
-        els,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power3.out' }
-      );
+      gsap.fromTo(els, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power3.out' });
     }
   }, [loading]);
 
-  /* ---- derived data ---- */
-  const accentColor = mandalInfo?.color ?? '#F59E0B';
+  /* derived data */
+  const accentColor = mandalInfo?.color ?? '#D97706';
+  const mandalCode = mandalInfo?.code ?? 'POL';
   const totalFamilies = villages.reduce((s, v) => s + v.totalFamilies, 0);
-  const totalFirstScheme = villages.reduce(
-    (s, v) => s + v.firstSchemeCount,
-    0
-  );
+  const totalFirstScheme = villages.reduce((s, v) => s + v.firstSchemeCount, 0);
 
-  // aggregated SES
   const aggregatedSes: Record<string, number> = {};
   villages.forEach((v) => {
     Object.entries(v.statusBreakdown).forEach(([k, val]) => {
@@ -164,408 +166,211 @@ export default function MandalView() {
     });
   });
   const sesEntries = Object.entries(SES_STATUS_CONFIG).map(([key, cfg]) => ({
-    key,
-    label: cfg.label,
-    color: cfg.color,
-    bg: cfg.bg,
-    hex: SES_HEX_COLORS[key] ?? '#6B7280',
-    count: aggregatedSes[key] || 0,
+    key, label: cfg.label, color: cfg.color, bg: cfg.bg,
+    hex: SES_HEX_COLORS[key] ?? '#94A3B8', count: aggregatedSes[key] || 0,
   }));
   const maxSes = Math.max(...sesEntries.map((d) => d.count), 1);
 
-  /* ---- SVG map geometry ---- */
+  /* SVG map geometry */
   const svgW = 700;
   const svgH = 440;
-  const pad = 60;
+  const pad = 50;
 
-  const lats = villages.map((v) => v.latitude);
-  const lngs = villages.map((v) => v.longitude);
-  const bounds = {
-    minLat: lats.length ? Math.min(...lats) - 0.015 : 17.1,
-    maxLat: lats.length ? Math.max(...lats) + 0.015 : 17.3,
-    minLng: lngs.length ? Math.min(...lngs) - 0.015 : 81.6,
-    maxLng: lngs.length ? Math.max(...lngs) + 0.015 : 81.8,
-  };
-
-  const villagePins = villages.map((v) => ({
-    ...v,
-    ...latLngToSvg(v.latitude, v.longitude, bounds, svgW, svgH, pad),
-  }));
-
-  /* ---- river path (simplified Godavari through area) ---- */
-  const riverPoints: [number, number][] = [
-    [bounds.maxLat + 0.005, bounds.minLng - 0.005],
-    [bounds.maxLat - 0.005, (bounds.minLng + bounds.maxLng) / 2 - 0.01],
-    [(bounds.maxLat + bounds.minLat) / 2 + 0.005, (bounds.minLng + bounds.maxLng) / 2],
-    [bounds.minLat + 0.005, (bounds.minLng + bounds.maxLng) / 2 + 0.01],
-    [bounds.minLat - 0.005, bounds.maxLng + 0.005],
-  ];
-  const riverSvg = riverPoints
-    .map(([lat, lng]) => {
-      const p = latLngToSvg(lat, lng, bounds, svgW, svgH, pad);
-      return `${p.x},${p.y}`;
-    })
-    .join(' Q ');
-
-  /* ---- tooltip handler ---- */
-  const handlePinHover = useCallback(
-    (v: VillageData, svgX: number, svgY: number) => {
-      setTooltip({ village: v, x: svgX, y: svgY });
-    },
-    []
+  const geoCoords = MANDAL_GEOJSON[mandalCode]?.coords || [];
+  const bounds = useMemo(() =>
+    villages.length ? computeBounds(villages, geoCoords) :
+    { minLat: 17.1, maxLat: 17.3, minLng: 81.6, maxLng: 81.8 },
+    [villages, mandalCode]
   );
 
-  /* -------------------------------------------------------------- */
-  /*  LOADING STATE                                                  */
-  /* -------------------------------------------------------------- */
+  const villagePins = useMemo(() =>
+    villages.map((v) => ({
+      ...v,
+      ...projectCoord(v.longitude, v.latitude, bounds, svgW, svgH, pad),
+    })),
+    [villages, bounds]
+  );
+
+  const mandalPath = useMemo(() =>
+    geoCoords.length ? polygonToSvgPath(geoCoords, bounds, svgW, svgH, pad) : '',
+    [geoCoords, bounds]
+  );
+
+  const riverSvg = useMemo(() =>
+    lineToSvgPath(GODAVARI_PATH, bounds, svgW, svgH, pad),
+    [bounds]
+  );
+
+  const handlePinHover = useCallback((v: VillageData, svgX: number, svgY: number) => {
+    setTooltip({ village: v, x: svgX, y: svgY });
+  }, []);
+
+  /* LOADING STATE */
   if (loading || !selectedMandalId) {
     return (
-      <div className="w-full min-h-screen bg-[#0A0F1E] flex items-center justify-center">
+      <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-          <p
-            className="text-gray-500 text-sm tracking-widest uppercase"
-            style={{ fontFamily: 'var(--font-jetbrains)' }}
-          >
-            Loading Mandal
-          </p>
+          <div className="w-12 h-12 border-2 border-slate-200 border-t-[#1E3A5F] rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Mandal</p>
         </div>
       </div>
     );
   }
 
-  /* -------------------------------------------------------------- */
-  /*  RENDER                                                         */
-  /* -------------------------------------------------------------- */
+  /* RENDER */
   return (
-    <div ref={containerRef} className="w-full min-h-screen bg-[#0A0F1E]">
-      {/* ============ TOP NAV BAR ============ */}
-      <div className="sticky top-0 z-50 bg-[#0A0F1E]/90 backdrop-blur-md border-b border-white/5">
+    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8]">
+      {/* Tricolor Bar */}
+      <div className="tricolor-bar w-full" />
+
+      {/* Top Nav - Navy gradient */}
+      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button
-              onClick={goBack}
-              className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-1"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back</span>
+            <button onClick={goBack} className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1">
+              <ChevronLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span>
             </button>
-            <div className="w-px h-6 bg-white/10" />
+            <div className="w-px h-6 bg-white/20" />
             <div className="flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full animate-pulse"
-                style={{ backgroundColor: accentColor }}
-              />
-              <span
-                className="text-sm font-medium text-white tracking-wide"
-                style={{ fontFamily: 'var(--font-jetbrains)' }}
-              >
-                POLAVARAM R&R PORTAL
-              </span>
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: accentColor }} />
+              <span className="text-sm font-medium text-white tracking-wide" style={{ fontFamily: 'var(--font-jetbrains)' }}>POLAVARAM R&R PORTAL</span>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span
-              className="font-semibold text-sm"
-              style={{ color: accentColor }}
-            >
-              {mandalInfo?.name?.toUpperCase()}
-            </span>
-            <span className="hidden md:inline">
-              Government of Andhra Pradesh
-            </span>
-            <div className="flex items-center gap-1.5 text-green-400">
-              <Activity className="w-3 h-3" />
-              <span>LIVE</span>
-            </div>
+          <div className="flex items-center gap-4 text-xs text-white/50">
+            <span className="font-semibold text-sm" style={{ color: accentColor }}>{mandalInfo?.name?.toUpperCase()}</span>
+            <span className="hidden md:inline">Government of Andhra Pradesh</span>
+            <div className="flex items-center gap-1.5 text-emerald-400"><Activity className="w-3 h-3" /><span>LIVE</span></div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* ============ MANDAL HEADER ============ */}
-        <div className="anim-in opacity-0 text-center space-y-2 py-4">
-          <h1
-            className="text-3xl sm:text-4xl font-bold tracking-tight"
-            style={{ color: accentColor }}
-          >
+        {/* Mandal Header */}
+        <div className="anim-in opacity-0 gov-card p-5 sm:p-6 text-center border-l-4" style={{ borderLeftColor: accentColor }}>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: accentColor }}>
             {mandalInfo?.name ?? 'Mandal'}
           </h1>
-          <p className="text-gray-400 text-lg">
-            {mandalInfo?.nameTelugu ?? ''}
-          </p>
-          <div className="flex items-center justify-center gap-6 sm:gap-10 pt-2">
+          <p className="text-slate-500 text-lg">{mandalInfo?.nameTelugu ?? ''}</p>
+          <div className="ashoka-divider max-w-xs mx-auto mt-3" />
+          <div className="flex items-center justify-center gap-6 sm:gap-10 pt-4">
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-1.5 text-gray-300">
+              <div className="flex items-center gap-1.5">
                 <Users className="w-4 h-4" style={{ color: accentColor }} />
-                <span className="counter-value text-2xl font-bold text-white">
-                  <CountUp end={totalFamilies} duration={2} separator="," />
-                </span>
+                <span className="counter-value text-2xl font-bold text-slate-900"><CountUp end={totalFamilies} duration={2} separator="," /></span>
               </div>
-              <span className="text-xs text-gray-500 mt-0.5">
-                Total Families
-              </span>
+              <span className="text-xs text-slate-400 mt-0.5">Total Families</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-1.5 text-gray-300">
+              <div className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4" style={{ color: accentColor }} />
-                <span className="counter-value text-2xl font-bold text-white">
-                  <CountUp end={villages.length} duration={1.5} />
-                </span>
+                <span className="counter-value text-2xl font-bold text-slate-900"><CountUp end={villages.length} duration={1.5} /></span>
               </div>
-              <span className="text-xs text-gray-500 mt-0.5">Villages</span>
+              <span className="text-xs text-slate-400 mt-0.5">Villages</span>
             </div>
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-1.5 text-gray-300">
-                <CheckCircle2
-                  className="w-4 h-4"
-                  style={{ color: accentColor }}
-                />
-                <span className="counter-value text-2xl font-bold text-white">
-                  <CountUp end={totalFirstScheme} duration={2} separator="," />
-                </span>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" style={{ color: accentColor }} />
+                <span className="counter-value text-2xl font-bold text-slate-900"><CountUp end={totalFirstScheme} duration={2} separator="," /></span>
               </div>
-              <span className="text-xs text-gray-500 mt-0.5">
-                First Scheme Eligible
-              </span>
+              <span className="text-xs text-slate-400 mt-0.5">First Scheme Eligible</span>
             </div>
           </div>
         </div>
 
-        {/* ============ SVG VILLAGE MAP ============ */}
+        {/* SVG Village Map with GeoJSON Boundary */}
         <div className="anim-in opacity-0">
-          <div className="glow-card p-4 sm:p-5">
+          <div className="gov-card p-4 sm:p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2
-                className="text-sm font-medium text-white tracking-wide"
-                style={{ fontFamily: 'var(--font-jetbrains)' }}
-              >
-                VILLAGE MAP
-              </h2>
-              <span className="text-xs text-gray-500">
-                {mandalInfo?.name?.toUpperCase()} MANDAL
-              </span>
+              <h2 className="text-sm font-semibold text-slate-900 tracking-wide" style={{ fontFamily: 'var(--font-jetbrains)' }}>VILLAGE MAP</h2>
+              <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">{mandalInfo?.name?.toUpperCase()} MANDAL</span>
             </div>
-            <div className="relative w-full h-[280px] sm:h-[400px] bg-[#0d1321] rounded-lg overflow-hidden border border-white/5">
-              <svg
-                viewBox={`0 0 ${svgW} ${svgH}`}
-                className="w-full h-full"
-                onMouseLeave={() => setTooltip(null)}
-              >
+            <div className="relative w-full h-[280px] sm:h-[400px] bg-[#F8FAFC] rounded-lg overflow-hidden border border-slate-200">
+              <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-full" onMouseLeave={() => { setTooltip(null); setHoveredVillage(null); }}>
                 <defs>
-                  {/* grid pattern */}
-                  <pattern
-                    id="mandal-grid"
-                    width="30"
-                    height="30"
-                    patternUnits="userSpaceOnUse"
-                  >
-                    <path
-                      d="M 30 0 L 0 0 0 30"
-                      fill="none"
-                      stroke="rgba(255,255,255,0.03)"
-                      strokeWidth="0.5"
-                    />
+                  <pattern id="mandal-grid-light" width="25" height="25" patternUnits="userSpaceOnUse">
+                    <path d="M 25 0 L 0 0 0 25" fill="none" stroke="rgba(148,163,184,0.1)" strokeWidth="0.5"/>
                   </pattern>
-                  {/* glow filter */}
-                  <filter id="pin-glow">
-                    <feGaussianBlur stdDeviation="4" result="b" />
-                    <feMerge>
-                      <feMergeNode in="b" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
+                  <filter id="pin-glow-light">
+                    <feGaussianBlur stdDeviation="3" result="b"/>
+                    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
                   </filter>
-                  {/* radial for each pin */}
-                  <radialGradient
-                    id="pin-radial"
-                    cx="50%"
-                    cy="50%"
-                    r="50%"
-                  >
-                    <stop
-                      offset="0%"
-                      stopColor={accentColor}
-                      stopOpacity="0.5"
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor={accentColor}
-                      stopOpacity="0"
-                    />
-                  </radialGradient>
                 </defs>
 
-                {/* background grid */}
-                <rect width={svgW} height={svgH} fill="url(#mandal-grid)" />
+                {/* Background */}
+                <rect width={svgW} height={svgH} fill="#F8FAFC"/>
+                <rect width={svgW} height={svgH} fill="url(#mandal-grid-light)"/>
 
                 {/* Godavari river */}
-                <path
-                  d={`M ${riverSvg}`}
-                  fill="none"
-                  stroke="#3B82F6"
-                  strokeWidth="3"
-                  opacity="0.5"
-                  strokeDasharray="800"
-                >
-                  <animate
-                    attributeName="stroke-dashoffset"
-                    from="800"
-                    to="0"
-                    dur="3s"
-                    fill="freeze"
-                  />
+                <path d={riverSvg} fill="none" stroke="#3B82F6" strokeWidth="3" opacity="0.4" strokeDasharray="800">
+                  <animate attributeName="stroke-dashoffset" from="800" to="0" dur="3s" fill="freeze"/>
                 </path>
-                <path
-                  d={`M ${riverSvg}`}
-                  fill="none"
-                  stroke="#60A5FA"
-                  strokeWidth="1"
-                  opacity="0.2"
-                />
-                <text
-                  x={svgW / 2 - 45}
-                  y={30}
-                  fill="#60A5FA"
-                  fontSize="9"
-                  opacity="0.5"
-                >
-                  GODAVARI RIVER
-                </text>
+                <path d={riverSvg} fill="none" stroke="#60A5FA" strokeWidth="1" opacity="0.2"/>
 
-                {/* village pins */}
-                {villagePins.map((v, i) => (
-                  <g
-                    key={v.id}
-                    className="cursor-pointer"
-                    onClick={() => navigateToVillage(v.id)}
-                    onMouseEnter={() => handlePinHover(v, v.x, v.y)}
-                    onMouseLeave={() => setTooltip(null)}
-                  >
-                    {/* breathing pulse ring */}
-                    <circle
-                      cx={v.x}
-                      cy={v.y}
-                      r="18"
-                      fill={accentColor}
-                      opacity="0.1"
-                    >
-                      <animate
-                        attributeName="r"
-                        values="12;22;12"
-                        dur={`${2 + i * 0.3}s`}
-                        repeatCount="indefinite"
-                      />
-                      <animate
-                        attributeName="opacity"
-                        values="0.15;0.05;0.15"
-                        dur={`${2 + i * 0.3}s`}
-                        repeatCount="indefinite"
-                      />
-                    </circle>
-                    {/* solid outer ring */}
-                    <circle
-                      cx={v.x}
-                      cy={v.y}
-                      r="8"
-                      fill={accentColor}
-                      opacity="0.2"
-                    />
-                    {/* center dot */}
-                    <circle
-                      cx={v.x}
-                      cy={v.y}
-                      r="4"
-                      fill={accentColor}
-                      filter="url(#pin-glow)"
-                    />
-                    {/* label */}
-                    <text
-                      x={v.x}
-                      y={v.y - 14}
-                      fill={accentColor}
-                      fontSize="8"
-                      textAnchor="middle"
-                      opacity="0.8"
-                    >
-                      {v.name}
-                    </text>
-                  </g>
-                ))}
-
-                {/* dam marker (center-ish) */}
-                {mandalInfo && (
-                  <g>
-                    <circle
-                      cx={svgW / 2}
-                      cy={svgH / 2}
-                      r="24"
-                      fill="url(#pin-radial)"
-                    >
-                      <animate
-                        attributeName="r"
-                        values="18;28;18"
-                        dur="2.5s"
-                        repeatCount="indefinite"
-                      />
-                    </circle>
-                    <circle
-                      cx={svgW / 2}
-                      cy={svgH / 2}
-                      r="3"
-                      fill="#F59E0B"
-                    />
-                    <text
-                      x={svgW / 2 + 10}
-                      y={svgH / 2 - 4}
-                      fill="#F59E0B"
-                      fontSize="7"
-                      fontWeight="bold"
-                    >
-                      DAM
-                    </text>
-                  </g>
+                {/* Mandal boundary polygon */}
+                {mandalPath && (
+                  <path
+                    d={mandalPath}
+                    fill={accentColor}
+                    fillOpacity="0.08"
+                    stroke={accentColor}
+                    strokeWidth="2"
+                    strokeOpacity="0.4"
+                    strokeDasharray="8,4"
+                  />
                 )}
 
-                {/* legend */}
-                <rect
-                  x="10"
-                  y={svgH - 40}
-                  width="150"
-                  height="30"
-                  rx="4"
-                  fill="rgba(0,0,0,0.5)"
-                />
-                <circle
-                  cx="24"
-                  cy={svgH - 25}
-                  r="3"
-                  fill={accentColor}
-                />
-                <text
-                  x="30"
-                  y={svgH - 22}
-                  fill="#9CA3AF"
-                  fontSize="7"
-                >
-                  Village
-                </text>
-                <line
-                  x1="75"
-                  y1={svgH - 28}
-                  x2="95"
-                  y2={svgH - 22}
-                  stroke="#3B82F6"
-                  strokeWidth="1.5"
-                  opacity="0.6"
-                />
-                <text
-                  x="99"
-                  y={svgH - 22}
-                  fill="#9CA3AF"
-                  fontSize="7"
-                >
-                  River
-                </text>
+                {/* Village pins */}
+                {villagePins.map((v, i) => {
+                  const isHovered = hoveredVillage === v.id;
+                  return (
+                    <g
+                      key={v.id}
+                      className="cursor-pointer"
+                      onClick={() => navigateToVillage(v.id)}
+                      onMouseEnter={() => { handlePinHover(v, v.x, v.y); setHoveredVillage(v.id); }}
+                      onMouseLeave={() => { setTooltip(null); setHoveredVillage(null); }}
+                    >
+                      {/* Pulse ring */}
+                      <circle cx={v.x} cy={v.y} r="16" fill={accentColor} opacity="0.08">
+                        <animate attributeName="r" values="10;18;10" dur={`${2 + i * 0.3}s`} repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.12;0.03;0.12" dur={`${2 + i * 0.3}s`} repeatCount="indefinite"/>
+                      </circle>
+                      {/* Outer ring */}
+                      <circle cx={v.x} cy={v.y} r={isHovered ? 9 : 7} fill={accentColor} opacity={isHovered ? 0.2 : 0.12} style={{ transition: 'all 0.2s' }}/>
+                      {/* Center dot */}
+                      <circle cx={v.x} cy={v.y} r={isHovered ? 5 : 3.5} fill={accentColor} filter="url(#pin-glow-light)" style={{ transition: 'all 0.2s' }}/>
+                      {/* Label */}
+                      <text x={v.x} y={v.y - 14} fill={accentColor} fontSize={isHovered ? '10' : '8'} fontWeight={isHovered ? '700' : '500'} textAnchor="middle" opacity={isHovered ? 1 : 0.75} style={{ transition: 'all 0.2s' }}>
+                        {v.name}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Dam marker */}
+                {(() => {
+                  const damP = projectCoord(81.7119, 17.2473, bounds, svgW, svgH, pad);
+                  return (
+                    <g>
+                      <circle cx={damP.x} cy={damP.y} r="14" fill="#D97706" opacity="0.1">
+                        <animate attributeName="r" values="10;18;10" dur="2.5s" repeatCount="indefinite"/>
+                      </circle>
+                      <polygon
+                        points={`${damP.x},${damP.y - 5} ${damP.x + 4},${damP.y} ${damP.x},${damP.y + 5} ${damP.x - 4},${damP.y}`}
+                        fill="#D97706"
+                      />
+                      <text x={damP.x + 10} y={damP.y + 3} fill="#92400E" fontSize="7" fontWeight="700">DAM</text>
+                    </g>
+                  );
+                })()}
+
+                {/* Legend */}
+                <rect x="10" y={svgH - 45} width="150" height="35" rx="5" fill="white" stroke="#E2E8F0" strokeWidth="1" opacity="0.95"/>
+                <circle cx="24" cy={svgH - 28} r="3" fill={accentColor}/><text x="30" y={svgH - 25} fill="#64748B" fontSize="7">Village</text>
+                <line x1="75" y1={svgH - 32} x2="95" y2={svgH - 26} stroke="#3B82F6" strokeWidth="1.5" opacity="0.5"/>
+                <text x="99" y={svgH - 25} fill="#64748B" fontSize="7">River</text>
+                <polygon points="24,35 28,39 24,43 20,39" fill="#D97706" transform={`translate(0, ${svgH - 62})`}/>
+                <text x="32" y={svgH - 20} fill="#64748B" fontSize="7">Dam</text>
               </svg>
 
               {/* Tooltip overlay */}
@@ -583,28 +388,16 @@ export default function MandalView() {
                       transform: 'translate(-50%, -100%)',
                     }}
                   >
-                    <div
-                      className="rounded-lg px-4 py-3 shadow-xl min-w-[180px]"
-                      style={{
-                        background: '#1F2937',
-                        border: `1px solid ${accentColor}40`,
-                      }}
-                    >
-                      <p
-                        className="text-sm font-semibold text-white"
-                      >
-                        {tooltip.village.name}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {tooltip.village.nameTelugu}
-                      </p>
+                    <div className="rounded-lg px-4 py-3 shadow-xl min-w-[180px] bg-white border border-slate-200" style={{ borderLeft: `3px solid ${accentColor}` }}>
+                      <p className="text-sm font-semibold text-slate-900">{tooltip.village.name}</p>
+                      <p className="text-xs text-slate-400">{tooltip.village.nameTelugu}</p>
                       <div className="mt-2 flex items-center gap-3 text-xs">
-                        <span className="text-gray-300">
+                        <span className="text-slate-600">
                           <Home className="w-3 h-3 inline mr-1" style={{ color: accentColor }} />
                           {tooltip.village.totalFamilies} families
                         </span>
-                        <span className="text-green-400">
-                          <CheckCircle2 className="w-3 h-3 inline mr-1" />
+                        <span className="text-emerald-700 font-medium">
+                          <CheckCircle2 className="w-3 h-3 inline mr-1"/>
                           {tooltip.village.firstSchemeCount}
                         </span>
                       </div>
@@ -613,22 +406,15 @@ export default function MandalView() {
                 )}
               </AnimatePresence>
             </div>
-            <p className="mt-2 text-xs text-gray-500 text-center">
-              Click on any village pin to explore details
-            </p>
+            <p className="mt-2 text-xs text-slate-400 text-center">Click on any village to explore details</p>
           </div>
         </div>
 
-        {/* ============ BOTTOM: VILLAGE LIST + STATS ============ */}
+        {/* Bottom: Village List + Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Village List Panel */}
           <div className="lg:col-span-2 space-y-3">
-            <h3
-              className="anim-in opacity-0 text-sm font-medium text-white tracking-wide mb-2"
-              style={{ fontFamily: 'var(--font-jetbrains)' }}
-            >
-              VILLAGES
-            </h3>
+            <h3 className="anim-in opacity-0 text-sm font-semibold text-slate-900 tracking-wide mb-2" style={{ fontFamily: 'var(--font-jetbrains)' }}>VILLAGES</h3>
             <div className="max-h-[500px] overflow-y-auto space-y-3 pr-1 custom-scrollbar">
               {villages.map((v, i) => {
                 const sesItems = Object.entries(v.statusBreakdown);
@@ -639,94 +425,52 @@ export default function MandalView() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 + i * 0.07 }}
-                    className="glow-card p-4 cursor-pointer group"
-                    style={{
-                      borderColor: `${accentColor}15`,
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = `${accentColor}50`;
-                      (e.currentTarget as HTMLElement).style.boxShadow = `0 0 25px ${accentColor}20`;
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = `${accentColor}15`;
-                      (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                    }}
+                    className="gov-card p-4 cursor-pointer group border-l-4"
+                    style={{ borderLeftColor: `${accentColor}60` }}
                     onClick={() => navigateToVillage(v.id)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: accentColor }}
-                        />
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }}/>
                         <div>
-                          <p className="text-sm font-medium text-white">
-                            {v.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {v.nameTelugu}
-                          </p>
+                          <p className="text-sm font-semibold text-slate-900">{v.name}</p>
+                          <p className="text-xs text-slate-400">{v.nameTelugu}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: `${accentColor}15`,
-                            color: accentColor,
-                          }}
-                        >
-                          <Users className="w-3 h-3" />
-                          {v.totalFamilies}
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border" style={{ backgroundColor: `${accentColor}10`, color: accentColor, borderColor: `${accentColor}30` }}>
+                          <Users className="w-3 h-3"/>{v.totalFamilies}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
+                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 transition-colors"/>
                       </div>
                     </div>
 
                     {/* SES mini bars */}
                     <div className="mt-3 flex items-center gap-1">
                       {sesItems.map(([status, count]) => {
-                        const cfg = SES_STATUS_CONFIG[status];
                         const hex = SES_HEX_COLORS[status];
-                        if (!cfg || !hex) return null;
+                        if (!hex) return null;
                         const pct = (count / total) * 100;
                         return (
-                          <div
-                            key={status}
-                            className="h-1.5 rounded-full first:rounded-l-full last:rounded-r-full"
-                            style={{
-                              width: `${pct}%`,
-                              backgroundColor: hex,
-                              opacity: 0.7,
-                              minWidth: 4,
-                            }}
-                            title={`${cfg.label}: ${count}`}
-                          />
+                          <div key={status} className="h-2 rounded-full first:rounded-l-full last:rounded-r-full" style={{ width: `${pct}%`, backgroundColor: hex, opacity: 0.7, minWidth: 4 }} title={`${SES_STATUS_CONFIG[status]?.label}: ${count}`}/>
                         );
                       })}
                     </div>
-                    <div className="mt-1.5 flex items-center gap-2 text-[10px] text-gray-500 flex-wrap">
+                    <div className="mt-1.5 flex items-center gap-2 text-[10px] text-slate-400 flex-wrap">
                       {sesItems.map(([status, count]) => {
-                        const cfg = SES_STATUS_CONFIG[status];
                         const hex = SES_HEX_COLORS[status];
-                        if (!cfg || !hex) return null;
+                        if (!hex) return null;
                         return (
                           <span key={status} className="flex items-center gap-1">
-                            <span
-                              className="w-1.5 h-1.5 rounded-full inline-block"
-                              style={{ backgroundColor: hex }}
-                            />
-                            {cfg.label} {count}
+                            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: hex }}/>
+                            {SES_STATUS_CONFIG[status]?.label} {count}
                           </span>
                         );
                       })}
                     </div>
 
-                    {/* first scheme count */}
                     <div className="mt-2 flex items-center gap-2 text-xs">
-                      <span className="text-green-400">
-                        {v.firstSchemeCount} first-scheme eligible
-                      </span>
+                      <span className="text-emerald-700 font-medium">{v.firstSchemeCount} first-scheme eligible</span>
                     </div>
                   </motion.div>
                 );
@@ -737,37 +481,17 @@ export default function MandalView() {
           {/* Stats Section */}
           <div className="space-y-4">
             {/* SES Breakdown */}
-            <div className="anim-in opacity-0 glow-card p-4 sm:p-5">
-              <h3
-                className="text-sm font-medium text-white tracking-wide mb-4"
-                style={{ fontFamily: 'var(--font-jetbrains)' }}
-              >
-                SES STATUS BREAKDOWN
-              </h3>
+            <div className="anim-in opacity-0 gov-card p-4 sm:p-5">
+              <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">SES STATUS BREAKDOWN</h3>
               <div className="space-y-3">
                 {sesEntries.map((item, i) => (
                   <div key={item.key}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className={`text-xs font-medium ${item.color}`}>
-                        {item.label}
-                      </span>
-                      <span className="text-xs text-gray-400 counter-value">
-                        <CountUp end={item.count} duration={1.5} separator="," />
-                      </span>
+                      <span className={`text-xs font-semibold ${item.color}`}>{item.label}</span>
+                      <span className="text-xs text-slate-500 counter-value"><CountUp end={item.count} duration={1.5} separator="," /></span>
                     </div>
-                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{
-                          width: `${(item.count / maxSes) * 100}%`,
-                        }}
-                        transition={{ duration: 1, delay: 0.3 + i * 0.1 }}
-                        className="h-full rounded-full"
-                        style={{
-                          backgroundColor: item.hex,
-                          opacity: 0.7,
-                        }}
-                      />
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${(item.count / maxSes) * 100}%` }} transition={{ duration: 1, delay: 0.3 + i * 0.1 }} className="h-full rounded-full" style={{ backgroundColor: item.hex, opacity: 0.7 }}/>
                     </div>
                   </div>
                 ))}
@@ -775,75 +499,35 @@ export default function MandalView() {
             </div>
 
             {/* Summary Card */}
-            <div className="anim-in opacity-0 glow-card p-4 sm:p-5">
-              <h3
-                className="text-sm font-medium text-white tracking-wide mb-3"
-                style={{ fontFamily: 'var(--font-jetbrains)' }}
-              >
-                MANDAL SUMMARY
-              </h3>
+            <div className="anim-in opacity-0 gov-card p-4 sm:p-5">
+              <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-3">MANDAL SUMMARY</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Total Families</span>
-                  <span className="text-sm font-bold text-white counter-value">
-                    <CountUp end={totalFamilies} duration={1.5} separator="," />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Total Villages</span>
-                  <span className="text-sm font-bold text-white counter-value">
-                    <CountUp end={villages.length} duration={1} />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">
-                    First Scheme Eligible
-                  </span>
-                  <span className="text-sm font-bold text-green-400 counter-value">
-                    <CountUp end={totalFirstScheme} duration={1.5} separator="," />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Eligibility Rate</span>
-                  <span
-                    className="text-sm font-bold counter-value"
-                    style={{ color: accentColor }}
-                  >
-                    {totalFamilies
-                      ? ((totalFirstScheme / totalFamilies) * 100).toFixed(1)
-                      : 0}
-                    %
-                  </span>
-                </div>
+                {[
+                  { label: 'Total Families', value: <CountUp end={totalFamilies} duration={1.5} separator="," />, bold: true },
+                  { label: 'Total Villages', value: <CountUp end={villages.length} duration={1} />, bold: true },
+                  { label: 'First Scheme Eligible', value: <CountUp end={totalFirstScheme} duration={1.5} separator="," />, bold: true, color: 'text-emerald-700' },
+                  { label: 'Eligibility Rate', value: `${totalFamilies ? ((totalFirstScheme / totalFamilies) * 100).toFixed(1) : 0}%`, bold: true, color: accentColor },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 bg-[#F8FAFC] rounded-lg">
+                    <span className="text-xs text-slate-400">{item.label}</span>
+                    <span className={`text-sm font-bold counter-value ${item.color || 'text-slate-900'}`}>{item.value}</span>
+                  </div>
+                ))}
 
-                {/* Visual progress bar for eligibility */}
+                {/* Visual progress bar */}
                 <div className="mt-2">
-                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{
-                        width: totalFamilies
-                          ? `${(totalFirstScheme / totalFamilies) * 100}%`
-                          : '0%',
-                      }}
-                      transition={{ duration: 1.2, delay: 0.5 }}
-                      className="h-full rounded-full"
-                      style={{ backgroundColor: accentColor, opacity: 0.6 }}
-                    />
+                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: totalFamilies ? `${(totalFirstScheme / totalFamilies) * 100}%` : '0%' }} transition={{ duration: 1.2, delay: 0.5 }} className="h-full rounded-full" style={{ backgroundColor: accentColor, opacity: 0.7 }}/>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Quick action */}
-            <div className="anim-in opacity-0 glow-card p-4">
-              <p className="text-xs text-gray-400 mb-2">
-                Select a village from the map or list to view family details and
-                relocation data.
-              </p>
+            <div className="anim-in opacity-0 gov-card p-4">
+              <p className="text-xs text-slate-400 mb-2">Select a village from the map or list to view family details and relocation data.</p>
               <div className="flex items-center gap-2 text-xs" style={{ color: accentColor }}>
-                <MapPin className="w-3.5 h-3.5" />
-                <span>{villages.length} villages available</span>
+                <MapPin className="w-3.5 h-3.5"/><span>{villages.length} villages available</span>
               </div>
             </div>
           </div>

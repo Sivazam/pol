@@ -28,51 +28,84 @@ export default function LoginView() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#0A0F1E] flex items-center justify-center px-4">
+    <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center px-4">
+      {/* Tricolor Bar at top */}
+      <div className="fixed top-0 left-0 right-0 tricolor-bar z-50" />
+
       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-md">
-        <div className="glow-card p-8">
+        <div className="gov-card p-8 border-t-4 border-t-[#1E3A5F]">
+          {/* Government Branding */}
           <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-7 h-7 text-amber-400" />
+            {/* Ashoka emblem-inspired shield icon */}
+            <div className="w-16 h-16 rounded-full bg-[#0F2B46] flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Shield className="w-8 h-8 text-amber-400" />
             </div>
-            <h1 className="text-xl font-bold text-white">POLAVARAM R&R PORTAL</h1>
-            <p className="text-xs text-gray-500 mt-2 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Government of Andhra Pradesh</p>
-            <div className="mt-3 mx-auto w-16 h-px bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+            <h1 className="text-xl font-bold text-[#0F2B46]">POLAVARAM R&R PORTAL</h1>
+            <p className="text-xs text-slate-400 mt-2 tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Government of Andhra Pradesh</p>
+            {/* Ashoka-inspired divider */}
+            <div className="ashoka-divider mt-3 mx-auto w-24" />
           </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs text-gray-400 mb-2">Email Address</label>
+              <label className="block text-xs text-slate-500 font-medium mb-2">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@polavaram.ap.gov.in" className="w-full pl-10 pr-4 py-3 bg-[#0A0F1E] border border-white/8 rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/40 transition-colors" required />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="admin@polavaram.ap.gov.in"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E3A5F] focus:ring-1 focus:ring-[#1E3A5F]/30 transition-colors"
+                  required
+                />
               </div>
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-2">Password</label>
+              <label className="block text-xs text-slate-500 font-medium mb-2">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter password" className="w-full pl-10 pr-12 py-3 bg-[#0A0F1E] border border-white/8 rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/40 transition-colors" required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="w-full pl-10 pr-12 py-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E3A5F] focus:ring-1 focus:ring-[#1E3A5F]/30 transition-colors"
+                  required
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
             {error && (
-              <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <p className="text-xs text-red-400">{error}</p>
+              <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-700 font-medium">{error}</p>
               </motion.div>
             )}
-            <button type="submit" disabled={loading} className="w-full py-3 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg text-sm font-medium tracking-wide hover:bg-amber-500/20 hover:border-amber-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />Authenticating...</div>) : 'Sign In to Portal'}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-[#1E3A5F] text-white rounded-lg text-sm font-semibold tracking-wide hover:bg-[#0F2B46] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Authenticating...
+                </div>
+              ) : 'Sign In to Portal'}
             </button>
           </form>
-          <div className="mt-6 pt-4 border-t border-white/5 text-center">
-            <p className="text-[10px] text-gray-600 tracking-widest uppercase">Water Resources Department — Government of Andhra Pradesh</p>
-            <div className="flex items-center justify-center gap-1.5 mt-2 text-green-400 text-[10px]"><Activity className="w-2.5 h-2.5" /><span>SECURE PORTAL</span></div>
+
+          <div className="mt-6 pt-4 border-t border-slate-200 text-center">
+            <p className="text-[10px] text-slate-400 tracking-widest uppercase">Water Resources Department — Government of Andhra Pradesh</p>
+            <div className="flex items-center justify-center gap-1.5 mt-2 text-green-700 text-[10px] font-medium"><Activity className="w-2.5 h-2.5" /><span>SECURE PORTAL</span></div>
           </div>
         </div>
         <div className="text-center mt-4">
-          <button onClick={() => { setAuthenticated(true); setView('dashboard'); }} className="text-xs text-gray-500 hover:text-gray-300 transition-colors underline">Skip login — Enter as viewer</button>
+          <button onClick={() => { setAuthenticated(true); setView('dashboard'); }} className="text-xs text-slate-400 hover:text-slate-600 transition-colors underline">
+            Skip login — Enter as viewer
+          </button>
         </div>
       </motion.div>
     </div>

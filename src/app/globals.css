@@ -45,37 +45,38 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #0A0F1E;
-  --foreground: #F9FAFB;
-  --card: #111827;
-  --card-foreground: #F9FAFB;
-  --popover: #111827;
-  --popover-foreground: #F9FAFB;
-  --primary: #1E40AF;
-  --primary-foreground: #F9FAFB;
-  --secondary: #1F2937;
-  --secondary-foreground: #F9FAFB;
-  --muted: #1F2937;
-  --muted-foreground: #9CA3AF;
-  --accent: #1E40AF;
-  --accent-foreground: #F9FAFB;
-  --destructive: #EF4444;
-  --border: rgba(255,255,255,0.08);
-  --input: rgba(255,255,255,0.08);
-  --ring: rgba(30,64,175,0.5);
-  --chart-1: #F59E0B;
-  --chart-2: #14B8A6;
-  --chart-3: #F97316;
-  --chart-4: #1E40AF;
-  --chart-5: #EF4444;
-  --sidebar: #111827;
-  --sidebar-foreground: #F9FAFB;
-  --sidebar-primary: #1E40AF;
-  --sidebar-primary-foreground: #F9FAFB;
-  --sidebar-accent: #1F2937;
-  --sidebar-accent-foreground: #F9FAFB;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(30,64,175,0.5);
+  /* Light Government Theme */
+  --background: #F0F4F8;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --primary: #1E3A5F;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #334155;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #D97706;
+  --accent-foreground: #FFFFFF;
+  --destructive: #DC2626;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: rgba(30,58,95,0.4);
+  --chart-1: #D97706;
+  --chart-2: #0D9488;
+  --chart-3: #EA580C;
+  --chart-4: #1E3A5F;
+  --chart-5: #DC2626;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #1E3A5F;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #334155;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: rgba(30,58,95,0.4);
 }
 
 @layer base {
@@ -87,20 +88,20 @@
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - Light theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #111827;
+  background: #F1F5F9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: #CBD5E1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4B5563;
+  background: #94A3B8;
 }
 
 /* Custom scrollbar utility class */
@@ -111,11 +112,11 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: #CBD5E1;
   border-radius: 2px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #4B5563;
+  background: #94A3B8;
 }
 
 /* Pulse animation for map markers */
@@ -133,11 +134,11 @@
 @keyframes breathe {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.3);
   }
   50% {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px 5px rgba(245, 158, 11, 0.2);
+    transform: scale(1.02);
+    box-shadow: 0 0 15px 3px rgba(217, 119, 6, 0.15);
   }
 }
 
@@ -164,7 +165,7 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.03), transparent);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
@@ -185,21 +186,39 @@
   font-size: 0.75rem;
 }
 
-/* Glowing card effect */
-.glow-card {
+/* Card style for light theme */
+.gov-card {
   position: relative;
-  background: #111827;
-  border: 1px solid rgba(255,255,255,0.08);
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
   border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   transition: all 0.3s ease;
 }
 
-.glow-card:hover {
-  border-color: rgba(30,64,175,0.4);
-  box-shadow: 0 0 20px rgba(30,64,175,0.15);
+.gov-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+}
+
+/* Navy header bar */
+.gov-header {
+  background: linear-gradient(135deg, #0F2B46 0%, #1E3A5F 100%);
 }
 
 /* Counter animation */
 .counter-value {
   font-variant-numeric: tabular-nums;
+}
+
+/* Ashoka Chakra-inspired decorative element */
+.ashoka-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #D97706, #1E3A5F, #D97706, transparent);
+}
+
+/* Tricolor accent */
+.tricolor-bar {
+  background: linear-gradient(90deg, #FF9933 0%, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%, #138808 100%);
+  height: 3px;
 }
