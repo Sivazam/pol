@@ -374,7 +374,7 @@ export default function DashboardView() {
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight mt-1">Polavaram Project Rehabilitation & Resettlement</h1>
-              <p className="text-sm text-white/60 mt-1">Water Resources Department — Monitoring 13,961 affected families across 3 mandals & 30 villages</p>
+              <p className="text-sm text-white/60 mt-1">Water Resources Department — Monitoring {stats.totalFamilies.toLocaleString()} affected families across {stats.mandals.length} mandals &amp; {stats.mandals.reduce((s, m) => s + m.villageCount, 0)} villages</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-400/30">

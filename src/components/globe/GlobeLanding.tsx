@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import gsap from 'gsap';
 import { Users, Map, Building2 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { POLAVARAM_DAM, ANDHRA_PRADESH } from '@/lib/constants';
+import { POLAVARAM_DAM, ANDHRA_PRADESH, PROJECT_STATS } from '@/lib/constants';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Dynamically import globe.gl with SSR disabled
@@ -98,19 +98,19 @@ function StatCounters({ className = '' }: { className?: string }) {
     <div className={`inline-flex items-center justify-center gap-3 sm:gap-5 text-white/90 bg-white/5 backdrop-blur-sm rounded-full px-5 sm:px-8 py-2.5 ${className}`}>
       <div className="flex items-center gap-1.5">
         <Users className="w-3.5 h-3.5 text-amber-400/80" />
-        <span className="text-amber-400 font-bold text-sm sm:text-base md:text-xl">13,961</span>
+        <span className="text-amber-400 font-bold text-sm sm:text-base md:text-xl">{PROJECT_STATS.totalFamilies.toLocaleString()}</span>
         <span className="text-white/50 text-xs sm:text-sm">Families</span>
       </div>
       <span className="text-white/20">|</span>
       <div className="flex items-center gap-1.5">
         <Map className="w-3.5 h-3.5 text-amber-400/80" />
-        <span className="text-amber-400 font-bold text-sm sm:text-base md:text-xl">3</span>
+        <span className="text-amber-400 font-bold text-sm sm:text-base md:text-xl">{PROJECT_STATS.totalMandals}</span>
         <span className="text-white/50 text-xs sm:text-sm">Mandals</span>
       </div>
       <span className="text-white/20">|</span>
       <div className="flex items-center gap-1.5">
         <Building2 className="w-3.5 h-3.5 text-amber-400/80" />
-        <span className="text-amber-400 font-bold text-sm sm:text-base md:text-xl">30</span>
+        <span className="text-amber-400 font-bold text-sm sm:text-base md:text-xl">{PROJECT_STATS.totalVillages}</span>
         <span className="text-white/50 text-xs sm:text-sm">Villages</span>
       </div>
     </div>

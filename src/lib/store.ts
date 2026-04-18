@@ -55,7 +55,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ view });
     // Reset scroll position when navigating between views
     if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
     }
   },
   selectMandal: (id) => set({ selectedMandalId: id }),
@@ -92,7 +93,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ view: prev });
     // Reset scroll position when going back
     if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
     }
   },
 }));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
@@ -29,21 +29,37 @@ const viewComponents: Record<string, React.ComponentType> = {
 export default function Home() {
   const view = useAppStore((s) => s.view);
   const ViewComponent = viewComponents[view] || GlobeLanding;
+  const mainRef = useRef<HTMLElement>(null);
 
   // Reset scroll position when view changes
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    // Reset on document/html level
+    const resetScroll = () => {
+      window.scrollTo(0, 0);
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+      if (mainRef.current) mainRef.current.scrollTop = 0;
+    };
+    resetScroll();
+    // Multiple delayed resets to overcome Framer Motion animation timing
+    const timers = [
+      setTimeout(resetScroll, 50),
+      setTimeout(resetScroll, 150),
+      setTimeout(resetScroll, 350),
+      setTimeout(resetScroll, 500),
+    ];
+    return () => timers.forEach(clearTimeout);
   }, [view]);
 
   return (
-    <main className="w-full min-h-screen bg-[#F0F4F8]">
+    <main ref={mainRef} className="w-full min-h-screen bg-[#F0F4F8]">
       <AnimatePresence mode="wait">
         <motion.div
           key={view}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
           className="w-full min-h-screen"
         >
           <ViewComponent />

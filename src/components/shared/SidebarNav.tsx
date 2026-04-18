@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Map, Building2, Users, Search,
   LogIn, X, Menu, ChevronRight, Home, LandPlot,
 } from 'lucide-react';
+import { PROJECT_STATS } from '@/lib/constants';
 
 interface NavItem {
   view: AppView;
@@ -17,9 +18,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Overview & Stats' },
-  { view: 'mandal', label: 'Mandals', icon: Map, description: '3 Mandals' },
-  { view: 'village', label: 'Villages', icon: Building2, description: '30 Villages' },
-  { view: 'family', label: 'Families', icon: Users, description: '13,961 Families' },
+  { view: 'mandal', label: 'Mandals', icon: Map, description: `${PROJECT_STATS.totalMandals} Mandals` },
+  { view: 'village', label: 'Villages', icon: Building2, description: `${PROJECT_STATS.totalVillages} Villages` },
+  { view: 'family', label: 'Families', icon: Users, description: `${PROJECT_STATS.totalFamilies.toLocaleString()} Families` },
   { view: 'relocation', label: 'Relocation', icon: LandPlot, description: 'Plot Allotment' },
   { view: 'login', label: 'Admin', icon: LogIn, description: 'Secure Login' },
 ];
