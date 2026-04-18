@@ -4,13 +4,21 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     const mandalId = request.nextUrl.searchParams.get('mandalId');
-    if (!mandalId) {
-      return NextResponse.json({ error: 'mandalId is required', code: 400 }, { status: 400 });
+    const all = request.nextUrl.searchParams.get('all') === 'true';
+
+    // If no mandalId and not requesting all, return error
+    if (!mandalId && !all) {
+      return NextResponse.json({ error: 'mandalId or all=true is required', code: 400 }, { status: 400 });
+    }
+
+    const where: any = {};
+    if (mandalId) {
+      where.mandalId = mandalId;
     }
 
     const villages = await db.village.findMany({
-      where: { mandalId },
-      include: { mandal: { select: { name: true, color: true } } },
+      where,
+      include: { mandal: { select: { name: true, nameTelugu: true, color: true, code: true } } },
       orderBy: { name: 'asc' },
     });
 

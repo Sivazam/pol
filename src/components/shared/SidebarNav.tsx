@@ -30,7 +30,6 @@ export default function SidebarNav() {
   const setView = useAppStore((s) => s.setView);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
-  const setShowFamilyTable = useAppStore((s) => s.setShowFamilyTable);
   const selectedMandalId = useAppStore((s) => s.selectedMandalId);
   const selectedVillageId = useAppStore((s) => s.selectedVillageId);
   const selectedFamilyId = useAppStore((s) => s.selectedFamilyId);
@@ -44,30 +43,23 @@ export default function SidebarNav() {
     if (navView === 'dashboard') {
       setView('dashboard');
     } else if (navView === 'mandal') {
-      // If a mandal is selected, navigate to it; otherwise go to dashboard
-      if (selectedMandalId) {
-        setView('mandal');
-      } else {
-        setView('dashboard');
-      }
+      // If a specific mandal is selected, navigate to its detail; otherwise show mandals list
+      // The MandalView handles both cases: with/without selectedMandalId
+      setView('mandal');
     } else if (navView === 'village') {
-      // If a village is selected, navigate to it; otherwise go to dashboard
-      if (selectedVillageId) {
-        setView('village');
-      } else {
-        setView('dashboard');
-      }
+      // If a specific village is selected, navigate to its detail; otherwise show villages list
+      setView('village');
     } else if (navView === 'family') {
-      // Open the family data table from dashboard
-      setView('dashboard');
-      setShowFamilyTable(true);
-    } else if (navView === 'relocation') {
-      // If a family is selected, navigate to relocation; otherwise go to dashboard
+      // If a specific family is selected, navigate to its detail; otherwise show families list
       if (selectedFamilyId) {
-        setView('relocation');
+        setView('family');
       } else {
-        setView('dashboard');
+        // Clear family selection so FamilyView shows the searchable list
+        setView('family');
       }
+    } else if (navView === 'relocation') {
+      // Always navigate to relocation view; RelocationView handles both cases
+      setView('relocation');
     } else {
       setView(navView);
     }
