@@ -4,9 +4,9 @@ export const ANDHRA_PRADESH = { lat: 17.0005, lng: 81.8040 };
 export const INDIA = { lat: 20.5937, lng: 78.9629 };
 
 export const MANDAL_COLORS = {
-  POL: '#D97706', // Amber-600
-  VEL: '#0D9488', // Teal-600
-  BUT: '#EA580C', // Orange-600
+  VRP: '#D97706', // Amber-600 — VR Puram
+  CHN: '#0D9488', // Teal-600 — Chintoor
+  KUN: '#EA580C', // Orange-600 — Kunavaram
 } as const;
 
 // Light theme status configurations
@@ -41,9 +41,9 @@ export const GODAVARI_RIVER_PATH: [number, number][] = [
 ];
 
 export const MANDAL_CODES = {
-  POLAVARAM: 'POL',
-  VELAIRPAD: 'VEL',
-  BUTTAIGUDEM: 'BUT',
+  VR_PURAM: 'VRP',
+  CHINTOOR: 'CHN',
+  KUNAVARAM: 'KUN',
 } as const;
 
 // Government brand colors for light theme
@@ -56,4 +56,12 @@ export const GOV_COLORS = {
   greenLight: '#DCFCE7',
   saffron: '#FF9933',
   tricolorGreen: '#138808',
+} as const;
+
+// Real project statistics
+export const PROJECT_STATS = {
+  totalFamilies: 13961,
+  totalMandals: 3,
+  totalVillages: 30,
+  firstSchemeEligibleMembers: 9663,
 } as const;

@@ -34,42 +34,39 @@ interface Stats {
   }>;
 }
 
-// GeoJSON mandal boundaries (embedded)
+// GeoJSON mandal boundaries (embedded) — Real mandal names
 const MANDAL_GEOJSON = {
-  POL: { name: 'Polavaram', coords: [[81.638,17.285],[81.655,17.295],[81.678,17.300],[81.700,17.298],[81.720,17.290],[81.738,17.280],[81.750,17.265],[81.758,17.248],[81.755,17.230],[81.748,17.218],[81.735,17.208],[81.720,17.200],[81.700,17.198],[81.682,17.202],[81.668,17.210],[81.655,17.222],[81.645,17.238],[81.638,17.255],[81.635,17.270],[81.638,17.285]] },
-  VEL: { name: 'Velairpad', coords: [[81.540,17.358],[81.558,17.368],[81.580,17.375],[81.605,17.378],[81.628,17.372],[81.648,17.360],[81.662,17.345],[81.672,17.328],[81.678,17.310],[81.672,17.295],[81.660,17.282],[81.645,17.272],[81.628,17.265],[81.608,17.262],[81.588,17.265],[81.572,17.275],[81.558,17.290],[81.548,17.308],[81.542,17.325],[81.538,17.342],[81.540,17.358]] },
-  BUT: { name: 'Buttaigudem', coords: [[81.660,17.200],[81.678,17.208],[81.700,17.210],[81.722,17.205],[81.742,17.195],[81.758,17.182],[81.772,17.168],[81.782,17.150],[81.785,17.132],[81.778,17.115],[81.765,17.102],[81.748,17.092],[81.728,17.088],[81.708,17.090],[81.690,17.098],[81.675,17.110],[81.662,17.125],[81.652,17.142],[81.648,17.160],[81.650,17.178],[81.655,17.192],[81.660,17.200]] },
+  VRP: { name: 'VR Puram', coords: [[81.410,17.270],[81.430,17.280],[81.455,17.288],[81.478,17.290],[81.500,17.285],[81.518,17.275],[81.530,17.260],[81.538,17.245],[81.535,17.228],[81.525,17.215],[81.510,17.205],[81.490,17.198],[81.468,17.195],[81.448,17.200],[81.432,17.210],[81.420,17.222],[81.412,17.238],[81.408,17.255],[81.406,17.265],[81.410,17.270]] },
+  CHN: { name: 'Chintoor', coords: [[81.345,17.220],[81.368,17.230],[81.390,17.238],[81.410,17.240],[81.428,17.235],[81.442,17.225],[81.452,17.210],[81.458,17.195],[81.455,17.178],[81.445,17.165],[81.430,17.155],[81.412,17.148],[81.392,17.145],[81.372,17.150],[81.358,17.160],[81.348,17.175],[81.342,17.190],[81.340,17.205],[81.342,17.215],[81.345,17.220]] },
+  KUN: { name: 'Kunavaram', coords: [[81.268,17.168],[81.290,17.178],[81.315,17.185],[81.338,17.188],[81.358,17.182],[81.375,17.172],[81.388,17.158],[81.395,17.142],[81.392,17.125],[81.382,17.112],[81.368,17.102],[81.350,17.095],[81.330,17.092],[81.310,17.095],[81.292,17.105],[81.278,17.118],[81.270,17.132],[81.265,17.148],[81.264,17.160],[81.268,17.168]] },
 };
 
-// Godavari river path
+// Godavari river path through the project area
 const GODAVARI_PATH = [
-  [81.350,17.480],[81.380,17.458],[81.405,17.438],[81.430,17.415],
-  [81.458,17.392],[81.485,17.370],[81.510,17.348],[81.535,17.325],
-  [81.555,17.305],[81.575,17.285],[81.595,17.268],[81.618,17.252],
-  [81.640,17.240],[81.658,17.232],[81.675,17.225],[81.690,17.218],
-  [81.700,17.212],[81.711,17.205],[81.712,17.198],[81.710,17.190],
-  [81.705,17.180],[81.698,17.168],[81.690,17.155],[81.682,17.142],
-  [81.675,17.128],[81.668,17.115],[81.660,17.100],[81.652,17.085],
-  [81.645,17.070],[81.638,17.055],[81.632,17.040],[81.628,17.025],
+  [81.250,17.280],[81.270,17.268],[81.290,17.255],[81.310,17.242],
+  [81.330,17.230],[81.348,17.220],[81.365,17.210],[81.380,17.200],
+  [81.395,17.190],[81.410,17.180],[81.425,17.170],[81.440,17.160],
+  [81.455,17.148],[81.468,17.138],[81.478,17.128],[81.490,17.118],
+  [81.505,17.108],[81.520,17.098],[81.538,17.088],[81.555,17.078],
+  [81.575,17.068],[81.595,17.058],[81.615,17.048],[81.638,17.038],
 ];
 
-// District boundary
+// District boundary (Eluru / Alluri Sitarama Raju districts)
 const DISTRICT_BOUNDARY = [
-  [81.250,17.480],[81.300,17.500],[81.360,17.510],[81.420,17.505],
-  [81.480,17.498],[81.540,17.490],[81.590,17.478],[81.630,17.460],
-  [81.665,17.440],[81.695,17.415],[81.715,17.388],[81.730,17.358],
-  [81.742,17.325],[81.750,17.290],[81.755,17.255],[81.758,17.220],
-  [81.758,17.185],[81.752,17.150],[81.740,17.118],[81.722,17.090],
-  [81.700,17.068],[81.672,17.052],[81.640,17.042],[81.605,17.038],
-  [81.570,17.042],[81.535,17.055],[81.505,17.075],[81.478,17.098],
-  [81.455,17.125],[81.435,17.155],[81.420,17.188],[81.405,17.218],
-  [81.385,17.248],[81.360,17.275],[81.330,17.300],[81.300,17.320],
-  [81.272,17.340],[81.255,17.362],[81.245,17.388],[81.240,17.415],
-  [81.238,17.440],[81.240,17.460],[81.250,17.480],
+  [81.220,17.320],[81.240,17.340],[81.268,17.355],[81.300,17.365],
+  [81.338,17.370],[81.375,17.368],[81.410,17.362],[81.440,17.352],
+  [81.465,17.338],[81.488,17.320],[81.505,17.300],[81.518,17.278],
+  [81.528,17.255],[81.535,17.230],[81.538,17.205],[81.535,17.180],
+  [81.528,17.158],[81.518,17.138],[81.505,17.120],[81.488,17.105],
+  [81.468,17.092],[81.445,17.082],[81.420,17.075],[81.392,17.072],
+  [81.365,17.072],[81.338,17.078],[81.315,17.088],[81.295,17.102],
+  [81.278,17.118],[81.265,17.138],[81.255,17.158],[81.248,17.180],
+  [81.242,17.205],[81.238,17.230],[81.235,17.255],[81.232,17.280],
+  [81.228,17.300],[81.222,17.315],[81.220,17.320],
 ];
 
-// Map projection
-const MAP_BOUNDS = { minLng: 81.22, maxLng: 81.80, minLat: 17.02, maxLat: 17.52 };
+// Map projection — adjusted for new mandal locations
+const MAP_BOUNDS = { minLng: 81.22, maxLng: 81.58, minLat: 17.06, maxLat: 17.32 };
 const SVG_W = 700;
 const SVG_H = 460;
 const MAP_PAD = 40;
@@ -154,11 +151,11 @@ function MandalBarLegend({ payload }: { payload?: Array<{ value: string; color: 
 
 // Recent Activity mock data
 const RECENT_ACTIVITIES = [
-  { id: 1, icon: BadgeCheck, description: 'Family PDF-POL-CHI-0001 status changed to Verified', time: '2 hours ago', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { id: 2, icon: MapPinned, description: 'New plot allotted to PDF-VEL-PUR-0005', time: '5 hours ago', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
-  { id: 3, icon: ClipboardCheck, description: 'Family PDF-BUT-GUN-0012 SES survey completed', time: '8 hours ago', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
-  { id: 4, icon: KeyRound, description: 'Plot possession given for PDF-POL-BHA-0003', time: '1 day ago', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  { id: 5, icon: FileCheck, description: 'Family PDF-VEL-VLP-0008 approved for relocation', time: '1 day ago', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+  { id: 1, icon: BadgeCheck, description: 'Family PDF-VRP-VRP-0142 status changed to Verified', time: '2 hours ago', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+  { id: 2, icon: MapPinned, description: 'New plot allotted to PDF-CHN-CHN-0028', time: '5 hours ago', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
+  { id: 3, icon: ClipboardCheck, description: 'Family PDF-KUN-KUN-0045 SES survey completed', time: '8 hours ago', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
+  { id: 4, icon: KeyRound, description: 'Plot possession given for PDF-VRP-WAD-0018', time: '1 day ago', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  { id: 5, icon: FileCheck, description: 'Family PDF-CHN-AGK-0009 approved for relocation', time: '1 day ago', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
 ];
 
 // Section header component with accent and separator
@@ -201,19 +198,19 @@ export default function DashboardView() {
 
   // Memoize SVG paths
   const mandalPaths = useMemo(() => ({
-    POL: polygonToSvgPath(MANDAL_GEOJSON.POL.coords),
-    VEL: polygonToSvgPath(MANDAL_GEOJSON.VEL.coords),
-    BUT: polygonToSvgPath(MANDAL_GEOJSON.BUT.coords),
+    VRP: polygonToSvgPath(MANDAL_GEOJSON.VRP.coords),
+    CHN: polygonToSvgPath(MANDAL_GEOJSON.CHN.coords),
+    KUN: polygonToSvgPath(MANDAL_GEOJSON.KUN.coords),
   }), []);
 
   const districtPath = useMemo(() => polygonToSvgPath(DISTRICT_BOUNDARY), []);
   const riverPath = useMemo(() => pathToSvgLine(GODAVARI_PATH), []);
-  const damPoint = useMemo(() => project(81.7119, 17.2473), []);
+  const damPoint = useMemo(() => project(81.460, 17.230), []); // Polavaram Dam area
 
   const mandalCentroids = useMemo(() => ({
-    POL: { ...getCentroid(MANDAL_GEOJSON.POL.coords), name: 'Polavaram' },
-    VEL: { ...getCentroid(MANDAL_GEOJSON.VEL.coords), name: 'Velairpad' },
-    BUT: { ...getCentroid(MANDAL_GEOJSON.BUT.coords), name: 'Buttaigudem' },
+    VRP: { ...getCentroid(MANDAL_GEOJSON.VRP.coords), name: 'VR Puram' },
+    CHN: { ...getCentroid(MANDAL_GEOJSON.CHN.coords), name: 'Chintoor' },
+    KUN: { ...getCentroid(MANDAL_GEOJSON.KUN.coords), name: 'Kunavaram' },
   }), []);
 
   // Map mandal code to stats
@@ -329,7 +326,7 @@ export default function DashboardView() {
   ];
   const maxSes = Math.max(...sesData.map(d => d.count), 1);
 
-  const mandalColorMap: Record<string, string> = { POL: '#D97706', VEL: '#0D9488', BUT: '#EA580C' };
+  const mandalColorMap: Record<string, string> = { VRP: '#D97706', CHN: '#0D9488', KUN: '#EA580C' };
 
   return (
     <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8] flex flex-col">
@@ -377,7 +374,7 @@ export default function DashboardView() {
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight mt-1">Polavaram Project Rehabilitation & Resettlement</h1>
-              <p className="text-sm text-white/60 mt-1">Water Resources Department — Monitoring 14,000+ affected families across Eluru District</p>
+              <p className="text-sm text-white/60 mt-1">Water Resources Department — Monitoring 13,961 affected families across 3 mandals & 30 villages</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-400/30">
@@ -596,18 +593,18 @@ export default function DashboardView() {
 
                   {/* Enhanced Legend - larger, squares, family counts, box-shadow */}
                   <rect x="12" y={SVG_H - 68} width="200" height="58" rx="8" fill="white" stroke="#E2E8F0" strokeWidth="1" opacity="0.95" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))' }}/>
-                  {/* Polavaram - square shape + family count */}
+                  {/* VR Puram - square shape + family count */}
                   <rect x="24" y={SVG_H - 52} width="8" height="8" rx="1.5" fill="#D97706"/>
-                  <text x="38" y={SVG_H - 45} fill="#475569" fontSize="9" fontWeight="500">Polavaram</text>
-                  <text x="96" y={SVG_H - 45} fill="#94A3B8" fontSize="8">{mandalStatsMap.POL?.familyCount ?? ''}</text>
-                  {/* Velairpad - square shape + family count */}
+                  <text x="38" y={SVG_H - 45} fill="#475569" fontSize="9" fontWeight="500">VR Puram</text>
+                  <text x="96" y={SVG_H - 45} fill="#94A3B8" fontSize="8">{mandalStatsMap.VRP?.familyCount ?? ''}</text>
+                  {/* Chintoor - square shape + family count */}
                   <rect x="120" y={SVG_H - 52} width="8" height="8" rx="1.5" fill="#0D9488"/>
-                  <text x="134" y={SVG_H - 45} fill="#475569" fontSize="9" fontWeight="500">Velairpad</text>
-                  <text x="198" y={SVG_H - 45} fill="#94A3B8" fontSize="8">{mandalStatsMap.VEL?.familyCount ?? ''}</text>
-                  {/* Buttaigudem - square shape + family count */}
+                  <text x="134" y={SVG_H - 45} fill="#475569" fontSize="9" fontWeight="500">Chintoor</text>
+                  <text x="192" y={SVG_H - 45} fill="#94A3B8" fontSize="8">{mandalStatsMap.CHN?.familyCount ?? ''}</text>
+                  {/* Kunavaram - square shape + family count */}
                   <rect x="24" y={SVG_H - 34} width="8" height="8" rx="1.5" fill="#EA580C"/>
-                  <text x="38" y={SVG_H - 27} fill="#475569" fontSize="9" fontWeight="500">Buttaigudem</text>
-                  <text x="108" y={SVG_H - 27} fill="#94A3B8" fontSize="8">{mandalStatsMap.BUT?.familyCount ?? ''}</text>
+                  <text x="38" y={SVG_H - 27} fill="#475569" fontSize="9" fontWeight="500">Kunavaram</text>
+                  <text x="108" y={SVG_H - 27} fill="#94A3B8" fontSize="8">{mandalStatsMap.KUN?.familyCount ?? ''}</text>
                   {/* River line legend */}
                   <line x1="130" y1={SVG_H - 30} x2="155" y2={SVG_H - 30} stroke="#3B82F6" strokeWidth="1.5" opacity="0.6"/>
                   <text x="160" y={SVG_H - 27} fill="#475569" fontSize="9" fontWeight="500">River</text>

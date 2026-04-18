@@ -18,8 +18,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Overview & Stats' },
   { view: 'mandal', label: 'Mandals', icon: Map, description: '3 Mandals' },
-  { view: 'village', label: 'Villages', icon: Building2, description: '15 Villages' },
-  { view: 'family', label: 'Families', icon: Users, description: '750 Families' },
+  { view: 'village', label: 'Villages', icon: Building2, description: '30 Villages' },
+  { view: 'family', label: 'Families', icon: Users, description: '13,961 Families' },
   { view: 'relocation', label: 'Relocation', icon: LandPlot, description: 'Plot Allotment' },
   { view: 'login', label: 'Admin', icon: LogIn, description: 'Secure Login' },
 ];
