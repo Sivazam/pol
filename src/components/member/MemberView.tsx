@@ -6,6 +6,8 @@ import gsap from 'gsap';
 import { ChevronLeft, Activity, User, Calendar, MapPin, Briefcase, CreditCard, Shield } from 'lucide-react';
 import GlobalSearch from '@/components/shared/GlobalSearch';
 import Breadcrumb from '@/components/shared/Breadcrumb';
+import GovFooter from '@/components/shared/GovFooter';
+import SidebarNav from '@/components/shared/SidebarNav';
 
 interface MemberData {
   id: string;
@@ -82,14 +84,18 @@ export default function MemberView() {
   const avatarStyle = avatarColorMap[member.name.length % avatarColorMap.length];
 
   return (
-    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8]">
+    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8] flex flex-col">
+      {/* Sidebar Navigation */}
+      <SidebarNav />
+
       {/* Tricolor Bar */}
-      <div className="tricolor-bar" />
+      <div className="tricolor-bar w-full lg:pl-[52px]" />
 
       {/* Top Nav - Navy gradient */}
-      <div className="sticky top-0 z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F]">
+      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md lg:pl-[52px]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <SidebarNav />
             <button onClick={goBack} className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1">
               <ChevronLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span>
             </button>
@@ -100,6 +106,7 @@ export default function MemberView() {
           <div className="flex items-center gap-1.5 text-green-300 text-xs"><Activity className="w-3 h-3" /><span>LIVE</span></div>
         </div>
       </div>
+      <div className="flex-1">
       <div className="max-w-3xl mx-auto px-4 sm:px-6"><Breadcrumb /></div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -167,6 +174,8 @@ export default function MemberView() {
           </div>
         </div>
       </div>
+      </div>
+      <GovFooter />
     </div>
   );
 }

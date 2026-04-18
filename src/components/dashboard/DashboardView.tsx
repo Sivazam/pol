@@ -11,6 +11,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import GovFooter from '@/components/shared/GovFooter';
 import GlobalSearch from '@/components/shared/GlobalSearch';
 import NotificationBanner from '@/components/shared/NotificationBanner';
+import SidebarNav from '@/components/shared/SidebarNav';
 
 interface Stats {
   totalFamilies: number;
@@ -260,13 +261,17 @@ export default function DashboardView() {
 
   return (
     <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8] flex flex-col">
+      {/* Sidebar Navigation */}
+      <SidebarNav />
+
       {/* Tricolor Bar */}
-      <div className="tricolor-bar w-full" />
+      <div className="tricolor-bar w-full lg:pl-[52px]" />
 
       {/* Top Nav - Navy gradient */}
-      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md">
+      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md lg:pl-[52px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <SidebarNav />
             <button onClick={goBack} className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1">
               <ChevronRight className="w-4 h-4 rotate-180" /><span className="hidden sm:inline">Back</span>
             </button>
@@ -286,7 +291,7 @@ export default function DashboardView() {
         <NotificationBanner />
       </div>
 
-      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 w-full">
+      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:pl-[68px] py-6 space-y-6 w-full">
         {/* Government Header Banner */}
         <div className="anim-in opacity-0 gov-card p-5 sm:p-6 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] text-white">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

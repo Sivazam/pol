@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import GlobalSearch from '@/components/shared/GlobalSearch';
 import Breadcrumb from '@/components/shared/Breadcrumb';
+import GovFooter from '@/components/shared/GovFooter';
+import SidebarNav from '@/components/shared/SidebarNav';
 
 interface Family {
   id: string;
@@ -160,14 +162,18 @@ export default function VillageView() {
   }
 
   return (
-    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8]">
+    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8] flex flex-col">
+      {/* Sidebar Navigation */}
+      <SidebarNav />
+
       {/* Tricolor Bar */}
-      <div className="tricolor-bar w-full sticky top-0 z-[60]" />
+      <div className="tricolor-bar w-full lg:pl-[52px]" />
 
       {/* Top Nav Bar - Navy */}
-      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] border-b border-[#0F2B46]/50">
+      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] border-b border-[#0F2B46]/50 lg:pl-[52px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
+            <SidebarNav />
             <button
               onClick={goBack}
               className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1"
@@ -202,6 +208,7 @@ export default function VillageView() {
         </div>
       </div>
 
+      <div className="flex-1">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><Breadcrumb /></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -496,6 +503,8 @@ export default function VillageView() {
           </div>
         )}
       </div>
+      </div>
+      <GovFooter />
     </div>
   );
 }

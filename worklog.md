@@ -482,3 +482,109 @@ Unresolved issues / Next steps:
 - Could add real-time notifications with WebSocket
 - Could add time series chart showing rehabilitation progress over time
 - Could enhance with MapLibre GL JS for true interactive maps with GeoJSON polygon boundaries
+
+---
+Task ID: 3
+Agent: QA Fix Agent
+Task: Fix GovFooter consistency, NotificationBanner duplication, tricolor bar sticky behavior, and nav consistency across all views
+
+Work Log:
+- Read worklog.md to understand project context and previous work
+- Read all 5 view components (MandalView, VillageView, FamilyView, MemberView, RelocationView) and GovFooter shared component
+- Read existing DashboardView to understand the GovFooter integration pattern
+
+Fixes Applied:
+
+1. MandalView.tsx:
+   - Replaced NotificationBanner import with GovFooter import
+   - Removed `<NotificationBanner />` from sticky navy header (fixes duplication with Dashboard)
+   - Changed outermost div from `className="w-full min-h-screen bg-[#F0F4F8]"` to `className="w-full min-h-screen bg-[#F0F4F8] flex flex-col"`
+   - Wrapped main content area (breadcrumb + content) in `<div className="flex-1">` wrapper
+   - Added `<GovFooter />` at bottom before closing outer div
+
+2. VillageView.tsx:
+   - Added GovFooter import
+   - Changed tricolor bar from `className="tricolor-bar w-full sticky top-0 z-[60]"` to `className="tricolor-bar w-full"` (removed inconsistent sticky behavior)
+   - Changed outermost div from `className="w-full min-h-screen bg-[#F0F4F8]"` to `className="w-full min-h-screen bg-[#F0F4F8] flex flex-col"`
+   - Wrapped main content area in `<div className="flex-1">` wrapper
+   - Added `<GovFooter />` at bottom before closing outer div
+
+3. FamilyView.tsx:
+   - Added GovFooter import
+   - Changed tricolor bar from `className="tricolor-bar"` to `className="tricolor-bar w-full"` (consistency)
+   - Changed navy header from `className="sticky top-0 z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F]"` to `className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md"` (consistent with MandalView/VillageView)
+   - Changed outermost div from `className="w-full min-h-screen bg-[#F0F4F8]"` to `className="w-full min-h-screen bg-[#F0F4F8] flex flex-col"`
+   - Wrapped main content area in `<div className="flex-1">` wrapper
+   - Added `<GovFooter />` at bottom before closing outer div
+
+4. MemberView.tsx:
+   - Added GovFooter import
+   - Changed tricolor bar from `className="tricolor-bar"` to `className="tricolor-bar w-full"` (consistency)
+   - Changed navy header from `className="sticky top-0 z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F]"` to `className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md"` (consistent with other views)
+   - Changed outermost div from `className="w-full min-h-screen bg-[#F0F4F8]"` to `className="w-full min-h-screen bg-[#F0F4F8] flex flex-col"`
+   - Wrapped main content area in `<div className="flex-1">` wrapper
+   - Added `<GovFooter />` at bottom before closing outer div
+
+5. RelocationView.tsx:
+   - Added GovFooter import
+   - Changed tricolor bar from `className="tricolor-bar"` to `className="tricolor-bar w-full"` (consistency)
+   - Changed navy header from `className="sticky top-0 z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F]"` to `className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md"` (consistent with other views)
+   - Changed outermost div from `className="w-full min-h-screen bg-[#F0F4F8]"` to `className="w-full min-h-screen bg-[#F0F4F8] flex flex-col"`
+   - Wrapped main content area in `<div className="flex-1">` wrapper
+   - Added `<GovFooter />` at bottom before closing outer div
+
+Lint Results:
+- `bun run lint` passes with zero errors
+- Dev server compiles successfully
+
+Stage Summary:
+- All 5 views now have GovFooter at the bottom with proper sticky footer behavior (flex-col + flex-1 + mt-auto)
+- NotificationBanner no longer duplicated — only shown on Dashboard
+- Tricolor bar sticky behavior is now consistent across all views (no sticky)
+- Navy header bars all consistently use `sticky top-[3px] z-50 ... shadow-md`
+- All views have consistent `w-full` on tricolor bar divs
+
+---
+Task ID: phase-6-sidebar
+Agent: Main Orchestrator
+Task: QA assessment, sidebar navigation, styling improvements, and feature enhancements
+
+Work Log:
+- Performed comprehensive QA using agent-browser + VLM across all views
+- VLM rated Dashboard 6/10, MandalView 7/10, VillageView 7/10
+- Key issues identified: notification banner clutter, inconsistent status styling, missing sidebar nav, missing footer on some views
+- Fixed GovFooter missing from MandalView, VillageView, FamilyView, MemberView, RelocationView (now all have consistent footer with sticky behavior)
+- Removed NotificationBanner duplication from MandalView (only shown on Dashboard)
+- Fixed tricolor bar sticky inconsistency in VillageView
+- Fixed navy header consistency (all views now use `sticky top-[3px] z-50 ... shadow-md`)
+- Created SidebarNav component with:
+  - Desktop: slim 52px icon rail on left side, expands on hover to 200px showing labels
+  - Mobile: hamburger button in navy header opens slide-out drawer with Framer Motion animation
+  - Active state: amber-500/20 bg with left border indicator
+  - 6 navigation items: Dashboard, Mandals, Villages, Families, Relocation, Admin
+  - Tricolor accent at top, LIVE indicator at bottom
+  - Government theme: navy gradient background, white/amber icons
+- Integrated SidebarNav into all 6 views (Dashboard, Mandal, Village, Family, Member, Relocation)
+- Added `lg:pl-[52px]` to tricolor bars and navy headers for sidebar offset
+- Added SidebarNav hamburger button to mobile headers
+- All lint checks pass
+- Dev server compiles successfully
+
+Stage Summary:
+- Portal now has consistent government footer across all views
+- Sidebar navigation provides quick access between all major views
+- Mobile-friendly hamburger menu for small screens
+- Desktop sidebar with expand-on-hover for space efficiency
+- VLM QA rating improved to 7/10 for dashboard
+- NotificationBanner deduplication reduces visual clutter
+- All views have consistent header/footer/sidebar behavior
+
+Unresolved issues / Next steps:
+- Globe.gl WebGL doesn't render in headless browser (fallback works fine in real browsers)
+- Login is client-side only (hardcoded credentials)
+- Could add MapLibre GL JS interactive maps for richer cartography
+- Could add PDF export for family SES sheets
+- Could add admin panel for managing families and plots
+- Could add time series chart showing rehabilitation progress over time
+- Could add dark/light theme toggle
+- Could improve sidebar with sub-navigation for deep views
