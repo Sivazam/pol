@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Mandal {
+  id          String    @id @default(cuid())
+  name        String
+  nameTelugu  String
+  code        String    @unique
+  latitude    Float
+  longitude   Float
+  color       String
+  villages    Village[]
+  createdAt   DateTime  @default(now())
+}
+
+model Village {
+  id            String    @id @default(cuid())
+  name          String
+  nameTelugu    String
+  code          String    @unique
+  mandalId      String
+  mandal        Mandal    @relation(fields: [mandalId], references: [id])
+  latitude      Float
+  longitude     Float
+  totalFamilies Int       @default(0)
+  families      Family[]
+  createdAt     DateTime  @default(now())
+}
+
+model Family {
+  id                String    @id @default(cuid())
+  pdfNumber         String    @unique
+  headName          String
+  headNameTelugu    String
+  villageId         String
+  village           Village   @relation(fields: [villageId], references: [id])
+  caste             String?
+  landAcres         Float?
+  houseType         String?
+  sesStatus         String    @default("SURVEYED")
+  firstSchemeEligible Boolean @default(false)
+  members           FamilyMember[]
+  newPlot           NewPlot?
+  createdAt         DateTime  @default(now())
+}
+
+model FamilyMember {
+  id          String    @id @default(cuid())
+  familyId    String
+  family      Family    @relation(fields: [familyId], references: [id])
+  name        String
+  nameTelugu  String?
+  relation    String
+  age         Int
+  gender      String
+  aadhar      String?
+  occupation  String?
+  isMinor     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+model NewPlot {
+  id              String    @id @default(cuid())
+  familyId        String    @unique
+  family          Family    @relation(fields: [familyId], references: [id])
+  plotNumber      String?
+  colonyName      String?
+  latitude        Float?
+  longitude       Float?
+  areaSqYards     Float?
+  allotmentStatus String    @default("PENDING")
+  allotmentDate   DateTime?
+  createdAt       DateTime  @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("VIEWER")
+  createdAt DateTime @default(now())
+}
