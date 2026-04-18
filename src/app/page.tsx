@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { AnimatePresence, motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
@@ -28,6 +29,11 @@ const viewComponents: Record<string, React.ComponentType> = {
 export default function Home() {
   const view = useAppStore((s) => s.view);
   const ViewComponent = viewComponents[view] || GlobeLanding;
+
+  // Reset scroll position when view changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [view]);
 
   return (
     <main className="w-full min-h-screen bg-[#F0F4F8]">

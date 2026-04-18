@@ -53,6 +53,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setView: (view) => {
     viewHistory.push(view);
     set({ view });
+    // Reset scroll position when navigating between views
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
   },
   selectMandal: (id) => set({ selectedMandalId: id }),
   selectVillage: (id) => set({ selectedVillageId: id }),
@@ -86,5 +90,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     viewHistory.pop();
     const prev = viewHistory[viewHistory.length - 1] || 'globe';
     set({ view: prev });
+    // Reset scroll position when going back
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
   },
 }));

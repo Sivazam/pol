@@ -366,7 +366,7 @@ export default function DashboardView() {
 
       <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:pl-[68px] py-6 space-y-8 w-full">
         {/* Government Header Banner */}
-        <div className="anim-in opacity-0 gov-card p-6 sm:p-7 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] text-white">
+        <div className="anim-in opacity-0 p-6 sm:p-7 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] text-white rounded-xl border border-[#0F2B46]/30 shadow-sm" style={{ background: 'linear-gradient(to right, #0F2B46, #1E3A5F)' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 mb-1">

@@ -590,6 +590,39 @@ Unresolved issues / Next steps:
 - Could improve sidebar with sub-navigation for deep views
 
 ---
+Task ID: light-theme-fix
+Agent: Main Orchestrator
+Task: Fix white text visibility on light theme and scroll position persistence
+
+Work Log:
+- User reported dashboard title "Polavaram Project Rehabilitation & Resettlement" was invisible due to white text on white background
+- Root cause: `.gov-card` CSS class sets `background: #FFFFFF` which overrides Tailwind `bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F]`, making the navy gradient invisible while `text-white` remains
+- Fixed DashboardView header banner by removing `gov-card` class and adding inline `style={{ background: 'linear-gradient(to right, #0F2B46, #1E3A5F)' }}` to ensure navy gradient renders
+- User reported scroll position persisted when navigating between views (SPA navigation doesn't reset scroll)
+- Fixed scroll reset in 3 places:
+  1. store.ts: Added `window.scrollTo({ top: 0, left: 0, behavior: 'instant' })` in `setView()` function
+  2. store.ts: Added same scroll reset in `goBack()` function
+  3. page.tsx: Added `useEffect` watching `view` state to call `window.scrollTo()` on every view change
+- Comprehensive light theme audit performed:
+  - Searched all .tsx files for `text-white` usage on potentially light backgrounds
+  - Verified all remaining `text-white` usages are on intentionally dark backgrounds (navy top nav bars, SidebarNav, GlobeLanding, dark accent badges)
+  - Confirmed no other `.gov-card` + gradient conflicts exist
+- QA verified via agent-browser + VLM:
+  - Dashboard title and subtitle now visible with white text on navy background ✓
+  - No white-on-white or invisible text issues ✓
+  - Overall theme is correctly light (light gray bg, white cards, dark text) ✓
+  - Scroll position resets to 0 when navigating forward (confirmed scrollY=0 on mandal view) ✓
+  - Scroll position resets to 0 when going back (confirmed scrollY=0 on dashboard) ✓
+- All lint checks pass
+- Dev server compiles successfully
+
+Stage Summary:
+- Dashboard header banner now correctly displays navy gradient background with white text
+- Scroll position properly resets on all navigation events (forward + back)
+- Comprehensive light theme audit confirmed no other visibility issues
+- All existing functionality preserved
+
+---
 Task ID: 4-a
 Agent: Feature Implementation Agent
 Task: Add Family Data Table View and Theme Toggle (Light/Dark Mode)
