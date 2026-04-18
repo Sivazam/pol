@@ -31,7 +31,7 @@ export async function GET() {
       return {
         id: m.id, name: m.name, nameTelugu: m.nameTelugu, code: m.code,
         latitude: m.latitude, longitude: m.longitude, color: m.color,
-        familyCount, firstSchemeCount, statusBreakdown,
+        familyCount, villageCount: villageIds.length, firstSchemeCount, statusBreakdown,
       };
     }));
 

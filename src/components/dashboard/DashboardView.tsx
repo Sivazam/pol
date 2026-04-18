@@ -8,13 +8,8 @@ import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { Users, Home, CheckCircle2, Clock, ChevronRight, Activity, LandPlot, MapPin, FileCheck, MapPinned, ClipboardCheck, KeyRound, BadgeCheck, TrendingUp, TrendingDown, Calendar, RefreshCw, AlertCircle, FileSignature, Key } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import GovFooter from '@/components/shared/GovFooter';
-import GlobalSearch from '@/components/shared/GlobalSearch';
-import NotificationBanner from '@/components/shared/NotificationBanner';
-import SidebarNav from '@/components/shared/SidebarNav';
-import MobileMenuButton from '@/components/shared/MobileMenuButton';
+import ViewLayout from '@/components/shared/ViewLayout';
 import DataTableView from '@/components/shared/DataTableView';
-import ThemeToggle from '@/components/shared/ThemeToggle';
 
 interface Stats {
   totalFamilies: number;
@@ -246,16 +241,22 @@ export default function DashboardView() {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-2 border-slate-200 border-t-[#1E3A5F] rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Dashboard</p>
+      <ViewLayout navTitle="DASHBOARD">
+        <div className="flex items-center justify-center py-32">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-2 border-slate-200 border-t-[#1E3A5F] rounded-full animate-spin" />
+            <p className="text-slate-400 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Dashboard</p>
+          </div>
         </div>
-      </div>
+      </ViewLayout>
     );
   }
 
-  if (!stats) return <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center"><p className="text-red-600 font-medium">Failed to load data</p></div>;
+  if (!stats) return (
+    <ViewLayout navTitle="DASHBOARD">
+      <div className="flex items-center justify-center py-32"><p className="text-red-600 font-medium">Failed to load data</p></div>
+    </ViewLayout>
+  );
 
   const resettleCount = stats.plotsAllotted + stats.plotsPossessionGiven;
   const completionPct = stats.totalFamilies ? ((resettleCount / stats.totalFamilies) * 100).toFixed(1) : '0';
@@ -331,40 +332,8 @@ export default function DashboardView() {
   const mandalColorMap: Record<string, string> = { VRP: '#D97706', CHN: '#0D9488', KUN: '#EA580C' };
 
   return (
-    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8] flex flex-col">
-      {/* Sidebar Navigation */}
-      <SidebarNav />
-
-      {/* Tricolor Bar — full width, no sidebar offset since sidebar starts below navbar */}
-      <div className="tricolor-bar w-full" />
-
-      {/* Top Nav - Navy gradient — full width */}
-      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <MobileMenuButton />
-            <button onClick={goBack} className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1">
-              <ChevronRight className="w-4 h-4 rotate-180" /><span className="hidden sm:inline">Back</span>
-            </button>
-            <div className="w-px h-6 bg-white/20" />
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-sm font-medium text-white tracking-wide" style={{ fontFamily: 'var(--font-jetbrains)' }}>POLAVARAM R&R PORTAL</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 text-xs text-white/50">
-            <GlobalSearch />
-            <span className="hidden md:inline">Government of Andhra Pradesh</span>
-            <div className="flex items-center gap-1.5 text-emerald-400"><Activity className="w-3 h-3" /><span>LIVE</span></div>
-            <ThemeToggle />
-          </div>
-        </div>
-        {/* Notification Banner */}
-        <NotificationBanner />
-      </div>
-
-      <div className="flex-1 lg:pl-[52px]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 w-full">
+    <ViewLayout navTitle="POLAVARAM R&R PORTAL">
+      <div ref={containerRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 w-full">
         {/* Government Header Banner */}
         <div className="anim-in opacity-0 p-6 sm:p-7 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] text-white rounded-xl border border-[#0F2B46]/30 shadow-sm" style={{ background: 'linear-gradient(to right, #0F2B46, #1E3A5F)' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -840,13 +809,9 @@ export default function DashboardView() {
           </div>
         </div>
       </div>
-      </div>{/* end lg:pl-[52px] wrapper */}
-
-      {/* Government Footer - has top border separator from GovFooter component */}
-      <GovFooter />
 
       {/* Family Data Table Dialog */}
       <DataTableView open={showDataTable || showFamilyTable} onOpenChange={(open) => { setShowDataTable(open); if (!open) setShowFamilyTable(false); }} />
-    </div>
+    </ViewLayout>
   );
 }

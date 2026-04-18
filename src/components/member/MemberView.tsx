@@ -9,12 +9,7 @@ import {
   Briefcase, CreditCard, Shield, Users, Home, FileText, Phone,
   Heart, GraduationCap, Eye
 } from 'lucide-react';
-import GlobalSearch from '@/components/shared/GlobalSearch';
-import Breadcrumb from '@/components/shared/Breadcrumb';
-import GovFooter from '@/components/shared/GovFooter';
-import SidebarNav from '@/components/shared/SidebarNav';
-import MobileMenuButton from '@/components/shared/MobileMenuButton';
-import ThemeToggle from '@/components/shared/ThemeToggle';
+import ViewLayout from '@/components/shared/ViewLayout';
 
 interface MemberData {
   id: string;
@@ -66,19 +61,21 @@ export default function MemberView() {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-2 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Member</p>
+      <ViewLayout maxWidth="max-w-3xl" navTitle="MEMBER">
+        <div className="flex items-center justify-center py-32">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-2 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
+            <p className="text-slate-400 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Member</p>
+          </div>
         </div>
-      </div>
+      </ViewLayout>
     );
   }
 
   if (!member) return (
-    <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center">
-      <p className="text-red-600 font-medium">Member not found</p>
-    </div>
+    <ViewLayout maxWidth="max-w-3xl" navTitle="MEMBER">
+      <div className="flex items-center justify-center py-32"><p className="text-red-600 font-medium">Member not found</p></div>
+    </ViewLayout>
   );
 
   const initials = member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -106,35 +103,8 @@ export default function MemberView() {
   ];
 
   return (
-    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8] flex flex-col">
-      <SidebarNav />
-      <div className="tricolor-bar w-full" />
-
-      {/* Top Nav */}
-      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <MobileMenuButton />
-            <button onClick={goBack} className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1">
-              <ChevronLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span>
-            </button>
-            <div className="w-px h-6 bg-white/20" />
-            <span className="text-sm text-white/60">{member.family.pdfNumber}</span>
-            <ChevronRight className="w-3 h-3 text-white/30" />
-            <span className="text-sm font-medium text-white/80 truncate max-w-[150px]">{member.name}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <GlobalSearch />
-            <div className="flex items-center gap-1.5 text-green-300 text-xs"><Activity className="w-3 h-3" /><span>LIVE</span></div>
-            <ThemeToggle />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 lg:pl-[52px]">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6"><Breadcrumb /></div>
-
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <ViewLayout maxWidth="max-w-3xl" navTitle={member.name} navTitleColor="#FBBF24" accentDotColor="#D97706" navSubtitle={member.family.pdfNumber}>
+      <div ref={containerRef} className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
           {/* Avatar & Name - Enhanced */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -302,8 +272,6 @@ export default function MemberView() {
             </p>
           </motion.div>
         </div>
-      </div>
-      <GovFooter />
-    </div>
+    </ViewLayout>
   );
 }
