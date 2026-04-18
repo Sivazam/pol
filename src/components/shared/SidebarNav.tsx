@@ -44,6 +44,10 @@ export default function SidebarNav() {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
+  const selectMandal = useAppStore((s) => s.selectMandal);
+  const selectVillage = useAppStore((s) => s.selectVillage);
+  const selectFamily = useAppStore((s) => s.selectFamily);
+
   // Don't show sidebar on globe or login views
   if (view === 'globe' || view === 'login') return null;
 
@@ -51,20 +55,17 @@ export default function SidebarNav() {
     if (navView === 'dashboard') {
       setView('dashboard');
     } else if (navView === 'mandal') {
-      // If a specific mandal is selected, navigate to its detail; otherwise show mandals list
-      // The MandalView handles both cases: with/without selectedMandalId
+      // Clear mandal selection so MandalView shows the "All Mandals" list
+      selectMandal(null);
       setView('mandal');
     } else if (navView === 'village') {
-      // If a specific village is selected, navigate to its detail; otherwise show villages list
+      // Clear village selection so VillageView shows the "All Villages" list
+      selectVillage(null);
       setView('village');
     } else if (navView === 'family') {
-      // If a specific family is selected, navigate to its detail; otherwise show families list
-      if (selectedFamilyId) {
-        setView('family');
-      } else {
-        // Clear family selection so FamilyView shows the searchable list
-        setView('family');
-      }
+      // Clear family selection so FamilyView shows the searchable list
+      selectFamily(null, null);
+      setView('family');
     } else if (navView === 'relocation') {
       // Always navigate to relocation view; RelocationView handles both cases
       setView('relocation');

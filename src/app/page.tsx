@@ -28,8 +28,15 @@ const viewComponents: Record<string, React.ComponentType> = {
 
 export default function Home() {
   const view = useAppStore((s) => s.view);
+  const selectedMandalId = useAppStore((s) => s.selectedMandalId);
+  const selectedVillageId = useAppStore((s) => s.selectedVillageId);
+  const selectedFamilyId = useAppStore((s) => s.selectedFamilyId);
   const ViewComponent = viewComponents[view] || GlobeLanding;
   const mainRef = useRef<HTMLElement>(null);
+
+  // Build a composite key so navigating within the same view type (e.g., from "All Villages" list to a specific village)
+  // causes the component to remount and reset its internal state
+  const compositeKey = `${view}-${selectedMandalId || ''}-${selectedVillageId || ''}-${selectedFamilyId || ''}`;
 
   // Reset scroll position when view changes
   useEffect(() => {
@@ -49,13 +56,13 @@ export default function Home() {
       setTimeout(resetScroll, 500),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [view]);
+  }, [view, selectedMandalId, selectedVillageId, selectedFamilyId]);
 
   return (
     <main ref={mainRef} className="w-full min-h-screen bg-[#F0F4F8]">
       <AnimatePresence mode="wait">
         <motion.div
-          key={view}
+          key={compositeKey}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

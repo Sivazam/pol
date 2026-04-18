@@ -32,10 +32,10 @@ export default function NotificationBanner() {
         {/* Scrolling announcement */}
         <div className="flex-1 overflow-hidden relative">
           <div className="flex whitespace-nowrap" style={{ animation: 'marquee 40s linear infinite' }}>
-            <span className="text-xs text-amber-800 mx-8">
+            <span className="text-xs text-amber-800 mx-8" role="marquee" aria-live="off">
               {ANNOUNCEMENTS.join('     •     ')}
             </span>
-            <span className="text-xs text-amber-800 mx-8">
+            <span className="text-xs text-amber-800 mx-8" aria-hidden="true">
               {ANNOUNCEMENTS.join('     •     ')}
             </span>
           </div>

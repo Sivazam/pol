@@ -1255,3 +1255,50 @@ Stage Summary:
 - "Plots Allotted" counter label corrected to "Families Resettled" for accuracy
 - All constants verified correct
 - All existing functionality preserved (mobile sidebar, hover-expand, etc.)
+---
+Task ID: qa-fix-phase
+Agent: Main Orchestrator
+Task: Comprehensive QA assessment, fix critical bugs, and verify all navigation flows
+
+Work Log:
+- Performed comprehensive QA using agent-browser across all views
+- Identified 7 issues (2 critical, 3 medium, 2 low)
+- Confirmed sidebar/content overlap issue was ALREADY RESOLVED via ViewLayout component with lg:pl-[52px]
+- Fixed P2/P4 (HIGH): Village/Mandal card navigation not working - root cause was component not remounting when navigating within same view type
+  - Changed page.tsx key from `view` to `compositeKey` using `${view}-${selectedMandalId}-${selectedVillageId}-${selectedFamilyId}`
+  - This ensures React remounts the component when selection changes within the same view type
+  - Updated scroll reset useEffect to also watch selection IDs
+- Fixed P1 (CRITICAL): GlobeLanding React runtime error
+  - Root cause: globe.gl uses Kapsule wrapper which isn't compatible with React's dynamic import
+  - Switched to react-globe.gl which provides proper React component wrappers
+  - Changed import from `import('globe.gl')` to `import('react-globe.gl')`
+  - Converted imperative Kapsule API calls to declarative React props (globeImageUrl, atmosphereColor, pointsData, etc.)
+  - Simplified globe initialization by removing setInterval-based polling loop
+- Fixed store.ts: Updated selectMandal, selectVillage, selectFamily, selectMember type signatures to accept null values
+- Fixed SidebarNav: Updated handleNavClick to clear selection IDs when clicking sidebar items so views show list mode
+  - Clicking "Mandals" now clears selectedMandalId → shows "All Mandals" list
+  - Clicking "Villages" now clears selectedVillageId → shows "All Villages" list
+  - Clicking "Families" now clears selectedFamilyPdf/selectedFamilyId → shows families list
+- Fixed SidebarNav: Moved useAppStore hooks before early return to fix react-hooks/rules-of-hooks lint error
+- Fixed goBack(): Enhanced to clear stale selection IDs based on the view being navigated back to
+- Fixed P6 (LOW): Added aria-hidden="true" to duplicate marquee span in NotificationBanner for accessibility
+- All lint checks pass with zero errors
+- Dev server compiles and runs successfully
+- All API routes returning 200 with correct data
+
+Stage Summary:
+- Critical navigation bug fixed: village/madal cards now navigate correctly to detail views
+- GlobeLanding fixed: switched from globe.gl to react-globe.gl for proper React component support
+- Sidebar navigation now correctly shows list views when clicking top-level menu items
+- goBack() now properly cleans up stale selection IDs
+- Accessibility improved with aria-hidden on duplicate marquee content
+- All 7 views verified working: Globe → Dashboard → Mandals → Villages → Families → Relocation → Login
+
+Unresolved issues / Next steps:
+- Sidebar hover expand overlays content (minor UX, not a bug)
+- Could add MapLibre GL JS interactive maps for richer cartography
+- Could add PDF export for family SES sheets
+- Could add admin panel for managing families and plots
+- Could add time series chart showing rehabilitation progress over time
+- Could improve sidebar with sub-navigation for deep views
+- Could add data-testid attributes for more reliable automated testing

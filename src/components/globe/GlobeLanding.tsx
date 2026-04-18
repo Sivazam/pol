@@ -8,8 +8,9 @@ import { useAppStore } from '@/lib/store';
 import { POLAVARAM_DAM, ANDHRA_PRADESH, PROJECT_STATS } from '@/lib/constants';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// Dynamically import globe.gl with SSR disabled
-const Globe = dynamic(() => import('globe.gl'), { ssr: false });
+// Dynamically import react-globe.gl with SSR disabled
+// react-globe.gl provides proper React component wrappers (unlike globe.gl which uses Kapsule)
+const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
 // Dynamically import tsparticles
 const Particles = dynamic(
@@ -329,38 +330,24 @@ function MobileGlobeView({ onEnter }: { onEnter: () => void }) {
     init();
   }, []);
 
-  // Globe setup & animation
+  // Globe animation
   useEffect(() => {
-    if (!globeRef.current) return;
-
     const timeouts: NodeJS.Timeout[] = [];
 
-    try {
-      globeRef.current
-        .globeImageUrl(
-          'https://unpkg.com/globe.gl/example/img/earth-blue-marble.jpg'
-        )
-        .atmosphereColor('#1E90FF')
-        .atmosphereAltitude(0.15)
-        .backgroundColor('#020818')
-        .pointsData(POLAVARAM_POINTS)
-        .pointAltitude(0.02)
-        .pointColor(() => '#F59E0B')
-        .pointRadius(0.6);
-
-      // Skip zoom animation on mobile, just show India
-      const t1 = setTimeout(() => {
-        if (globeRef.current) {
+    // Zoom to India on mobile after mount
+    const t1 = setTimeout(() => {
+      if (globeRef.current) {
+        try {
           globeRef.current.pointOfView(
             { lat: ANDHRA_PRADESH.lat, lng: ANDHRA_PRADESH.lng, altitude: 1.2 },
             2000
           );
+        } catch {
+          // Globe ref method not available
         }
-      }, 500);
-      timeouts.push(t1);
-    } catch {
-      // Globe failed silently
-    }
+      }
+    }, 500);
+    timeouts.push(t1);
 
     // Show title card faster on mobile
     const t2 = setTimeout(() => {
@@ -422,12 +409,20 @@ function MobileGlobeView({ onEnter }: { onEnter: () => void }) {
         />
       )}
 
-      {/* Globe */}
+      {/* Globe - using react-globe.gl with declarative props */}
       <div className="absolute inset-0">
         <Globe
           ref={globeRef}
           width={typeof window !== 'undefined' ? window.innerWidth : 400}
           height={typeof window !== 'undefined' ? window.innerHeight * 0.6 : 400}
+          globeImageUrl="https://unpkg.com/globe.gl/example/img/earth-blue-marble.jpg"
+          atmosphereColor="#1E90FF"
+          atmosphereAltitude={0.15}
+          backgroundColor="#020818"
+          pointsData={POLAVARAM_POINTS}
+          pointAltitude={0.02}
+          pointColor={() => '#F59E0B'}
+          pointRadius={0.6}
         />
       </div>
 
@@ -536,7 +531,7 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
     }, 1000);
   }, []);
 
-  // Globe setup & cinematic animation sequence
+  // Globe animation sequence
   useEffect(() => {
     if (webglFailed) {
       // If WebGL failed, show title card immediately
@@ -545,69 +540,44 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
     }
 
     const timeouts: NodeJS.Timeout[] = [];
-    let globeInitialized = false;
 
-    // Wait for globe to mount (max 5 seconds)
-    const waitForGlobe = setInterval(() => {
-      if (globeRef.current) {
-        clearInterval(waitForGlobe);
-        globeInitialized = true;
+    // Wait for globe ref to be available, then animate
+    const t1 = setTimeout(() => {
+      if (!globeRef.current) return;
+      try {
+        globeRef.current.controls().autoRotate = true;
+        globeRef.current.controls().autoRotateSpeed = 0.5;
 
-        try {
-          globeRef.current
-            .globeImageUrl('https://unpkg.com/globe.gl/example/img/earth-blue-marble.jpg')
-            .bumpImageUrl('https://unpkg.com/globe.gl/example/img/earth-topology.png')
-            .atmosphereColor('#1E90FF')
-            .atmosphereAltitude(0.15)
-            .backgroundColor('#020818')
-            .pointsData(POLAVARAM_POINTS)
-            .pointAltitude(0.01)
-            .pointColor(() => '#F59E0B')
-            .pointRadius(0.5)
-            .pointsMerge(false);
+        const t2 = setTimeout(() => {
+          if (!globeRef.current) return;
+          globeRef.current.controls().autoRotate = false;
+          globeRef.current.pointOfView({ lat: ANDHRA_PRADESH.lat, lng: ANDHRA_PRADESH.lng, altitude: 1.5 }, 3000);
+        }, 1500);
+        timeouts.push(t2);
 
-          globeRef.current.controls().autoRotate = true;
-          globeRef.current.controls().autoRotateSpeed = 0.5;
+        const t3 = setTimeout(() => {
+          if (!globeRef.current) return;
+          globeRef.current.pointOfView({ lat: POLAVARAM_DAM.lat, lng: POLAVARAM_DAM.lng, altitude: 0.8 }, 3000);
+        }, 4500);
+        timeouts.push(t3);
 
-          const t1 = setTimeout(() => {
-            if (!globeRef.current) return;
-            globeRef.current.controls().autoRotate = false;
-            globeRef.current.pointOfView({ lat: ANDHRA_PRADESH.lat, lng: ANDHRA_PRADESH.lng, altitude: 1.5 }, 3000);
-          }, 1500);
-          timeouts.push(t1);
-
-          const t2 = setTimeout(() => {
-            if (!globeRef.current) return;
-            globeRef.current.pointOfView({ lat: POLAVARAM_DAM.lat, lng: POLAVARAM_DAM.lng, altitude: 0.8 }, 3000);
-            const t3 = setTimeout(() => {
-              if (!globeRef.current) return;
-              globeRef.current.pointsData(POLAVARAM_POINTS).pointAltitude(0.04).pointRadius(0.8);
-            }, 2000);
-            timeouts.push(t3);
-          }, 4500);
-          timeouts.push(t2);
-
-          const t4 = setTimeout(animateTitleCard, 7500);
-          timeouts.push(t4);
-        } catch (e) {
-          console.warn('Globe setup failed:', e);
-          const tf = setTimeout(animateTitleCard, 500);
-          timeouts.push(tf);
-        }
+        const t4 = setTimeout(animateTitleCard, 7500);
+        timeouts.push(t4);
+      } catch (e) {
+        console.warn('Globe animation failed:', e);
+        const tf = setTimeout(animateTitleCard, 500);
+        timeouts.push(tf);
       }
-    }, 200);
+    }, 500);
+    timeouts.push(t1);
 
-    // Fallback: if globe doesn't initialize in 5s, show title card anyway
+    // Fallback: if globe doesn't initialize in 8s, show title card anyway
     const fallbackTimeout = setTimeout(() => {
-      if (!globeInitialized) {
-        clearInterval(waitForGlobe);
-        animateTitleCard();
-      }
-    }, 5000);
+      animateTitleCard();
+    }, 8000);
     timeouts.push(fallbackTimeout);
 
     return () => {
-      clearInterval(waitForGlobe);
       timeouts.forEach(clearTimeout);
     };
   }, [webglFailed, animateTitleCard]);
@@ -631,12 +601,22 @@ function DesktopGlobeView({ onEnter }: { onEnter: () => void }) {
         />
       )}
 
-      {/* Globe container */}
+      {/* Globe container - using react-globe.gl with declarative props */}
       <div className="absolute inset-0 z-[1]">
         <Globe
           ref={globeRef}
           width={typeof window !== 'undefined' ? window.innerWidth : 1200}
           height={typeof window !== 'undefined' ? window.innerHeight : 800}
+          globeImageUrl="https://unpkg.com/globe.gl/example/img/earth-blue-marble.jpg"
+          bumpImageUrl="https://unpkg.com/globe.gl/example/img/earth-topology.png"
+          atmosphereColor="#1E90FF"
+          atmosphereAltitude={0.15}
+          backgroundColor="#020818"
+          pointsData={POLAVARAM_POINTS}
+          pointAltitude={0.01}
+          pointColor={() => '#F59E0B'}
+          pointRadius={0.5}
+          pointsMerge={false}
         />
       </div>
 

@@ -23,10 +23,10 @@ interface AppState {
   notificationBannerVisible: boolean;
 
   setView: (view: AppView) => void;
-  selectMandal: (id: string) => void;
-  selectVillage: (id: string) => void;
-  selectFamily: (pdfNumber: string, familyId: string) => void;
-  selectMember: (id: string) => void;
+  selectMandal: (id: string | null) => void;
+  selectVillage: (id: string | null) => void;
+  selectFamily: (pdfNumber: string | null, familyId: string | null) => void;
+  selectMember: (id: string | null) => void;
   setAuthenticated: (val: boolean) => void;
   setGlobeAnimComplete: (val: boolean) => void;
   showFamilyTable: boolean;
@@ -98,7 +98,24 @@ export const useAppStore = create<AppState>((set, get) => ({
   goBack: () => {
     viewHistory.pop();
     const prev = viewHistory[viewHistory.length - 1] || 'globe';
-    set({ view: prev });
+    // Clear selection IDs based on where we're going back to
+    // This ensures the component remounts in the correct mode
+    const updates: Partial<AppState> = { view: prev };
+    if (prev === 'mandal') {
+      // Going back to mandal list? Keep selectedMandalId if it was set
+    } else if (prev === 'village') {
+      // Keep selectedVillageId if going back to a specific village
+    } else {
+      // Going back to dashboard or globe - clear deeper selections
+      if (prev !== 'mandal') updates.selectedMandalId = null;
+      if (prev !== 'village') updates.selectedVillageId = null;
+      if (prev !== 'family' && prev !== 'member' && prev !== 'relocation') {
+        updates.selectedFamilyPdf = null;
+        updates.selectedFamilyId = null;
+      }
+      if (prev !== 'member') updates.selectedMemberId = null;
+    }
+    set(updates);
     // Reset scroll position when going back
     if (typeof window !== 'undefined') {
       window.scrollTo(0, 0);
