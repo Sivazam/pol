@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import gsap from 'gsap';
 import { ChevronLeft, Activity, User, Calendar, MapPin, Briefcase, CreditCard, Shield } from 'lucide-react';
+import GlobalSearch from '@/components/shared/GlobalSearch';
+import Breadcrumb from '@/components/shared/Breadcrumb';
 
 interface MemberData {
   id: string;
@@ -94,9 +96,11 @@ export default function MemberView() {
             <div className="w-px h-6 bg-white/20" />
             <span className="text-sm text-white/60">{member.family.pdfNumber}</span>
           </div>
+          <GlobalSearch />
           <div className="flex items-center gap-1.5 text-green-300 text-xs"><Activity className="w-3 h-3" /><span>LIVE</span></div>
         </div>
       </div>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6"><Breadcrumb /></div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Avatar & Name */}

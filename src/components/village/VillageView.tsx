@@ -10,6 +10,8 @@ import {
   ChevronLeft, ChevronRight, Activity, Search, Filter,
   Users, Star, MapPin, X, LandPlot, Home,
 } from 'lucide-react';
+import GlobalSearch from '@/components/shared/GlobalSearch';
+import Breadcrumb from '@/components/shared/Breadcrumb';
 
 interface Family {
   id: string;
@@ -141,7 +143,7 @@ export default function VillageView() {
 
       {/* Top Nav Bar - Navy */}
       <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] border-b border-[#0F2B46]/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={goBack}
@@ -164,6 +166,7 @@ export default function VillageView() {
               </span>
             </div>
           </div>
+          <GlobalSearch />
           <div className="flex items-center gap-4 text-xs text-white/60">
             <span style={{ color: accentColor }} className="font-medium">
               {village?.mandal?.name}
@@ -175,6 +178,8 @@ export default function VillageView() {
           </div>
         </div>
       </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><Breadcrumb /></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Village Header Card */}

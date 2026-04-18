@@ -9,6 +9,8 @@ import gsap from 'gsap';
 import {
   ChevronRight, ChevronLeft, Activity, MapPin, Users, Home, CheckCircle2,
 } from 'lucide-react';
+import GlobalSearch from '@/components/shared/GlobalSearch';
+import Breadcrumb from '@/components/shared/Breadcrumb';
 
 /* ------------------------------------------------------------------ */
 /*  SES hex color map for inline styles (light theme)                  */
@@ -225,7 +227,7 @@ export default function MandalView() {
 
       {/* Top Nav - Navy gradient */}
       <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button onClick={goBack} className="text-white/70 hover:text-white transition-colors text-sm flex items-center gap-1">
               <ChevronLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span>
@@ -236,6 +238,7 @@ export default function MandalView() {
               <span className="text-sm font-medium text-white tracking-wide" style={{ fontFamily: 'var(--font-jetbrains)' }}>POLAVARAM R&R PORTAL</span>
             </div>
           </div>
+          <GlobalSearch />
           <div className="flex items-center gap-4 text-xs text-white/50">
             <span className="font-semibold text-sm" style={{ color: accentColor }}>{mandalInfo?.name?.toUpperCase()}</span>
             <span className="hidden md:inline">Government of Andhra Pradesh</span>
@@ -243,6 +246,8 @@ export default function MandalView() {
           </div>
         </div>
       </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><Breadcrumb /></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Mandal Header */}

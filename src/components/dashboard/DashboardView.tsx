@@ -6,7 +6,10 @@ import { SES_STATUS_CONFIG } from '@/lib/constants';
 import CountUp from 'react-countup';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
-import { Users, Home, CheckCircle2, Clock, ChevronRight, Activity, LandPlot, MapPin } from 'lucide-react';
+import { Users, Home, CheckCircle2, Clock, ChevronRight, Activity, LandPlot, MapPin, FileCheck, MapPinned, ClipboardCheck, KeyRound, BadgeCheck } from 'lucide-react';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import GovFooter from '@/components/shared/GovFooter';
+import GlobalSearch from '@/components/shared/GlobalSearch';
 
 interface Stats {
   totalFamilies: number;
@@ -93,6 +96,66 @@ function getCentroid(coords: number[][]) {
   return { lng: sum.lng / coords.length, lat: sum.lat / coords.length };
 }
 
+// SES Donut Chart colors
+const SES_COLORS: Record<string, string> = {
+  SURVEYED: '#94A3B8',
+  VERIFIED: '#D97706',
+  APPROVED: '#16A34A',
+  REJECTED: '#DC2626',
+};
+
+// Custom tooltip for SES donut chart
+function SesDonutTooltip({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; payload: { status: string; count: number; fill: string } }> }) {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0];
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-lg">
+      <p className="text-xs font-semibold text-slate-900">{data.payload.status}</p>
+      <p className="text-xs text-slate-500">{data.value.toLocaleString()} families</p>
+    </div>
+  );
+}
+
+// Custom tooltip for Mandal bar chart
+function MandalBarTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-lg">
+      <p className="text-xs font-semibold text-slate-900 mb-1">{label}</p>
+      {payload.map((entry, i) => (
+        <p key={i} className="text-xs text-slate-500">
+          <span className="inline-block w-2 h-2 rounded-sm mr-1.5" style={{ backgroundColor: entry.color }} />
+          {entry.name}: <span className="font-medium text-slate-700">{entry.value.toLocaleString()}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// Custom legend for Mandal bar chart
+function MandalBarLegend({ payload }: { payload?: Array<{ value: string; color: string }> }) {
+  if (!payload) return null;
+  return (
+    <div className="flex items-center justify-center gap-4 pt-3">
+      {payload.map((entry, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: entry.color }} />
+          <span className="text-xs text-slate-500">{entry.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Recent Activity mock data
+const RECENT_ACTIVITIES = [
+  { id: 1, icon: BadgeCheck, description: 'Family PDF-POL-CHI-0001 status changed to Verified', time: '2 hours ago', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+  { id: 2, icon: MapPinned, description: 'New plot allotted to PDF-VEL-PUR-0005', time: '5 hours ago', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
+  { id: 3, icon: ClipboardCheck, description: 'Family PDF-BUT-GUN-0012 SES survey completed', time: '8 hours ago', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
+  { id: 4, icon: KeyRound, description: 'Plot possession given for PDF-POL-BHA-0003', time: '1 day ago', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  { id: 5, icon: FileCheck, description: 'Family PDF-VEL-VLP-0008 approved for relocation', time: '1 day ago', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+];
+
 export default function DashboardView() {
   const navigateToMandal = useAppStore((s) => s.navigateToMandal);
   const goBack = useAppStore((s) => s.goBack);
@@ -139,6 +202,28 @@ export default function DashboardView() {
     return map;
   }, [stats]);
 
+  // SES Donut chart data
+  const sesDonutData = useMemo(() => {
+    if (!stats) return [];
+    return [
+      { status: 'SURVEYED', count: stats.surveyed },
+      { status: 'VERIFIED', count: stats.verified },
+      { status: 'APPROVED', count: stats.approved },
+      { status: 'REJECTED', count: stats.rejected },
+    ];
+  }, [stats]);
+
+  // Mandal comparison bar chart data
+  const mandalBarData = useMemo(() => {
+    if (!stats) return [];
+    return stats.mandals.map(m => ({
+      name: m.name,
+      code: m.code,
+      'Family Count': m.familyCount,
+      'First Scheme Eligible': m.firstSchemeCount,
+    }));
+  }, [stats]);
+
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center">
@@ -170,7 +255,7 @@ export default function DashboardView() {
   const mandalColorMap: Record<string, string> = { POL: '#D97706', VEL: '#0D9488', BUT: '#EA580C' };
 
   return (
-    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8]">
+    <div ref={containerRef} className="w-full min-h-screen bg-[#F0F4F8] flex flex-col">
       {/* Tricolor Bar */}
       <div className="tricolor-bar w-full" />
 
@@ -188,13 +273,14 @@ export default function DashboardView() {
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs text-white/50">
+            <GlobalSearch />
             <span className="hidden md:inline">Government of Andhra Pradesh</span>
             <div className="flex items-center gap-1.5 text-emerald-400"><Activity className="w-3 h-3" /><span>LIVE</span></div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 w-full">
         {/* Government Header Banner */}
         <div className="anim-in opacity-0 gov-card p-5 sm:p-6 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] text-white">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -404,6 +490,100 @@ export default function DashboardView() {
           </div>
         </div>
 
+        {/* Charts Section - 2-column grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* A) SES Status Donut Chart */}
+          <div className="anim-in opacity-0 gov-card p-4 sm:p-5">
+            <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">SES STATUS DISTRIBUTION</h3>
+            <div className="relative w-full" style={{ height: 280 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={sesDonutData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={105}
+                    paddingAngle={3}
+                    dataKey="count"
+                    nameKey="status"
+                    stroke="none"
+                  >
+                    {sesDonutData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={SES_COLORS[entry.status]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<SesDonutTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Center label */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <p className="counter-value text-2xl font-bold text-slate-900">{stats.totalFamilies.toLocaleString()}</p>
+                <p className="text-xs text-slate-400">Total Families</p>
+              </div>
+            </div>
+            {/* Donut Legend */}
+            <div className="flex items-center justify-center gap-4 mt-2">
+              {sesDonutData.map((entry) => (
+                <div key={entry.status} className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: SES_COLORS[entry.status] }} />
+                  <span className="text-xs text-slate-500">{entry.status.charAt(0) + entry.status.slice(1).toLowerCase()}</span>
+                  <span className="text-xs text-slate-400 font-medium counter-value">{entry.count.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* B) Mandal Comparison Bar Chart */}
+          <div className="anim-in opacity-0 gov-card p-4 sm:p-5">
+            <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">MANDAL COMPARISON</h3>
+            <div className="w-full" style={{ height: 280 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={mandalBarData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} width={80} />
+                  <Tooltip content={<MandalBarTooltip />} />
+                  <Legend content={<MandalBarLegend />} />
+                  <Bar dataKey="Family Count" fill="#1E3A5F" radius={[0, 4, 4, 0]} barSize={18} />
+                  <Bar dataKey="First Scheme Eligible" fill="#D97706" radius={[0, 4, 4, 0]} barSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity Section */}
+        <div className="anim-in opacity-0 gov-card p-4 sm:p-5">
+          <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">RECENT ACTIVITY</h3>
+          <div className="relative">
+            {/* Timeline vertical line */}
+            <div className="absolute left-[15px] top-2 bottom-2 w-px bg-slate-200" />
+            <div className="space-y-4">
+              {RECENT_ACTIVITIES.map((activity) => {
+                const IconComp = activity.icon;
+                return (
+                  <div key={activity.id} className="relative flex items-start gap-4 pl-2">
+                    {/* Timeline dot with icon */}
+                    <div className={`relative z-10 flex items-center justify-center w-[30px] h-[30px] rounded-full border ${activity.border} ${activity.bg} shrink-0`}>
+                      <IconComp className={`w-3.5 h-3.5 ${activity.color}`} />
+                    </div>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 pt-1">
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">{activity.description}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5" style={{ fontFamily: 'var(--font-jetbrains)' }}>{activity.time}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
         {/* Plot Allotment */}
         <div className="anim-in opacity-0 gov-card p-4 sm:p-5">
           <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">PLOT ALLOTMENT STATUS</h3>
@@ -423,6 +603,9 @@ export default function DashboardView() {
           </div>
         </div>
       </div>
+
+      {/* Government Footer */}
+      <GovFooter />
     </div>
   );
 }

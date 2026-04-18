@@ -10,6 +10,8 @@ import {
   Calendar, MapPin, FileText, ArrowRight, Star, CheckCircle2,
   Clock, Eye, User, Download, Printer,
 } from 'lucide-react';
+import GlobalSearch from '@/components/shared/GlobalSearch';
+import Breadcrumb from '@/components/shared/Breadcrumb';
 
 interface FamilyMember {
   id: string;
@@ -140,9 +142,11 @@ export default function FamilyView() {
             <ChevronRight className="w-3 h-3 text-white/40" />
             <span className="text-sm font-medium text-amber-300">{family.pdfNumber}</span>
           </div>
+          <GlobalSearch />
           <div className="flex items-center gap-1.5 text-green-300 text-xs"><Activity className="w-3 h-3" /><span>LIVE</span></div>
         </div>
       </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6"><Breadcrumb /></div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Header Section */}

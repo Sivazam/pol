@@ -9,6 +9,8 @@ import {
   ChevronLeft, Activity, MapPin, Home, LandPlot, Calendar,
   AlertTriangle, ArrowRight, CheckCircle2, Clock, Ruler, Building2,
 } from 'lucide-react';
+import GlobalSearch from '@/components/shared/GlobalSearch';
+import Breadcrumb from '@/components/shared/Breadcrumb';
 
 interface RelocationData {
   family: {
@@ -96,9 +98,11 @@ export default function RelocationView() {
             <span className="text-sm text-white/60">Relocation</span>
             <span className="text-sm font-medium text-amber-300">{data.family.pdfNumber}</span>
           </div>
+          <GlobalSearch />
           <div className="flex items-center gap-1.5 text-green-300 text-xs"><Activity className="w-3 h-3" /><span>LIVE</span></div>
         </div>
       </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6"><Breadcrumb /></div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Family Info */}
