@@ -292,7 +292,7 @@ export default function DashboardView() {
       tooltip: 'Families eligible for first scheme compensation under R&R policy',
     },
     {
-      label: 'Plots Allotted',
+      label: 'Families Resettled',
       value: resettleCount,
       icon: Home,
       color: 'text-amber-700',
@@ -303,7 +303,7 @@ export default function DashboardView() {
       gradientTo: 'to-amber-100/60',
       trend: '+5 this week',
       trendUp: true,
-      tooltip: 'Families who have been allotted new plots for relocation',
+      tooltip: 'Families who have been allotted plots or given possession for relocation',
     },
     {
       label: 'Pending Allotments',

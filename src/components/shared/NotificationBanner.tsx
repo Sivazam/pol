@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { X, Bell } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 
 const ANNOUNCEMENTS = [
   '📢 SES verification drive ongoing across all 3 mandals — families pending verification',
@@ -12,9 +13,10 @@ const ANNOUNCEMENTS = [
 ];
 
 export default function NotificationBanner() {
-  const [visible, setVisible] = useState(true);
+  const notificationBannerVisible = useAppStore((s) => s.notificationBannerVisible);
+  const setNotificationBannerVisible = useAppStore((s) => s.setNotificationBannerVisible);
 
-  if (!visible) return null;
+  if (!notificationBannerVisible) return null;
 
   return (
     <div className="w-full bg-amber-50 border-b border-amber-200 relative overflow-hidden no-print">
@@ -41,7 +43,7 @@ export default function NotificationBanner() {
 
         {/* Close button */}
         <button
-          onClick={() => setVisible(false)}
+          onClick={() => setNotificationBannerVisible(false)}
           className="px-3 h-full flex items-center hover:bg-amber-100 transition-colors shrink-0"
           aria-label="Dismiss notification"
         >

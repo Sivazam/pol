@@ -56,7 +56,7 @@ export default function ViewLayout({
       <div className="tricolor-bar w-full" />
 
       {/* Top Nav - Navy gradient — full width, sticky */}
-      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md">
+      <div className="sticky top-[3px] z-50 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] shadow-md lg:pl-[52px]">
         <div className={`${maxWidth} mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between`}>
           <div className="flex items-center gap-3">
             <MobileMenuButton />

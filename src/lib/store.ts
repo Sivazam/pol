@@ -20,6 +20,7 @@ interface AppState {
   isAuthenticated: boolean;
   globeAnimComplete: boolean;
   sidebarOpen: boolean;
+  notificationBannerVisible: boolean;
 
   setView: (view: AppView) => void;
   selectMandal: (id: string) => void;
@@ -31,6 +32,7 @@ interface AppState {
   showFamilyTable: boolean;
   setShowFamilyTable: (val: boolean) => void;
   setSidebarOpen: (val: boolean) => void;
+  setNotificationBannerVisible: (val: boolean) => void;
   navigateToMandal: (mandalId: string) => void;
   navigateToVillage: (villageId: string) => void;
   navigateToFamily: (pdfNumber: string, familyId: string) => void;
@@ -51,6 +53,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAuthenticated: false,
   globeAnimComplete: false,
   sidebarOpen: false,
+  notificationBannerVisible: true,
   showFamilyTable: false,
 
   setView: (view) => {
@@ -70,6 +73,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setGlobeAnimComplete: (val) => set({ globeAnimComplete: val }),
   setShowFamilyTable: (val) => set({ showFamilyTable: val }),
   setSidebarOpen: (val) => set({ sidebarOpen: val }),
+  setNotificationBannerVisible: (val) => set({ notificationBannerVisible: val }),
 
   navigateToMandal: (mandalId) => {
     set({ selectedMandalId: mandalId });

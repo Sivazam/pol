@@ -33,6 +33,14 @@ export default function SidebarNav() {
   const selectedMandalId = useAppStore((s) => s.selectedMandalId);
   const selectedVillageId = useAppStore((s) => s.selectedVillageId);
   const selectedFamilyId = useAppStore((s) => s.selectedFamilyId);
+  const notificationBannerVisible = useAppStore((s) => s.notificationBannerVisible);
+
+  // Calculate sidebar top offset:
+  // 3px tricolor + 56px nav = 59px (no banner)
+  // 3px tricolor + 56px nav + 36px banner = 95px (with banner)
+  // Banner only renders on dashboard view, so check both conditions
+  const bannerActive = notificationBannerVisible && view === 'dashboard';
+  const sidebarTop = bannerActive ? 95 : 59;
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
@@ -155,7 +163,8 @@ export default function SidebarNav() {
 
       {/* Desktop sidebar - slim icon rail that sits BELOW the top navbar */}
       <aside
-        className="hidden lg:flex fixed left-0 top-[59px] bottom-0 w-[52px] flex-col bg-gradient-to-b from-[#0F2B46] to-[#1E3A5F] z-30 border-r border-white/10 transition-all duration-300 hover:w-[200px] group"
+        className="hidden lg:flex fixed left-0 bottom-0 w-[52px] flex-col bg-gradient-to-b from-[#0F2B46] to-[#1E3A5F] z-30 border-r border-white/10 transition-all duration-300 hover:w-[200px] group"
+        style={{ top: sidebarTop }}
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => { setExpanded(false); setHoveredItem(null); }}
       >

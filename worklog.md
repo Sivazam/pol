@@ -1182,3 +1182,76 @@ Unresolved issues / Next steps:
 - Could add MapLibre GL JS interactive maps for richer cartography
 - Could add PDF export for family SES sheets
 - Could add admin panel for managing families and plots
+
+---
+Task ID: 1
+Agent: Sidebar/Banner Overlap Fix Agent
+Task: Fix sidebar/updates scroll section overlap + verify numbers + fix layout issues
+
+Work Log:
+- Read worklog.md to understand project context and previous work
+- Read all relevant files: store.ts, SidebarNav.tsx, ViewLayout.tsx, NotificationBanner.tsx, GovFooter.tsx, DashboardView.tsx, constants.ts
+
+Fixes Applied:
+
+1. store.ts - Added notificationBannerVisible state:
+   - Added `notificationBannerVisible: boolean` field (default: true) to AppState interface
+   - Added `setNotificationBannerVisible: (val: boolean) => void` setter to interface
+   - Added `notificationBannerVisible: true` to initial state
+   - Added `setNotificationBannerVisible: (val) => set({ notificationBannerVisible: val })` implementation
+
+2. SidebarNav.tsx - Dynamic top position based on banner visibility:
+   - Added `notificationBannerVisible` read from store
+   - Calculated `bannerActive = notificationBannerVisible && view === 'dashboard'` (banner only renders on dashboard)
+   - Set `sidebarTop = bannerActive ? 95 : 59` (3px tricolor + 56px nav + 36px banner = 95px; without banner = 59px)
+   - Changed desktop sidebar from hardcoded `top-[59px]` class to inline `style={{ top: sidebarTop }}`
+   - Sidebar now smoothly adjusts when banner is dismissed (transition-all duration-300 covers top changes)
+
+3. ViewLayout.tsx - Added sidebar offset padding to nav container:
+   - Added `lg:pl-[52px]` to the sticky top nav container div
+   - This offsets both the nav bar content and NotificationBanner from the 52px sidebar
+   - Content area already had `lg:pl-[52px]` — confirmed correct
+
+4. NotificationBanner.tsx - Use store state for dismiss persistence:
+   - Replaced local `useState(true)` with `notificationBannerVisible` from Zustand store
+   - Dismiss button now calls `setNotificationBannerVisible(false)` instead of local `setVisible(false)`
+   - Banner visibility now persists across navigation within the session
+   - Removing local state means re-mounting the component won't reset the banner
+   - Added import for `useAppStore`
+
+5. GovFooter.tsx - Verified correct:
+   - Already has `lg:pl-[52px]` on footer element ✓
+
+6. DashboardView.tsx - Fixed misleading "Plots Allotted" label:
+   - Changed label from 'Plots Allotted' to 'Families Resettled'
+   - The counter value `resettleCount = stats.plotsAllotted + stats.plotsPossessionGiven` represents families who have either been allotted plots OR given possession, making "Families Resettled" more accurate
+   - Updated tooltip from 'Families who have been allotted new plots for relocation' to 'Families who have been allotted plots or given possession for relocation'
+
+7. constants.ts - Verified numbers:
+   - totalFamilies: 13961 ✓
+   - firstSchemeEligibleMembers: 9663 ✓
+   - totalMandals: 3 ✓
+   - totalVillages: 30 ✓
+
+Layout Structure After Fix:
+```
+[Tricolor Bar - 3px - full width]
+[Top Nav - 56px - lg:pl-[52px] for sidebar]  ← z-50, sticky
+[Notification Banner - 36px - inside lg:pl-[52px] nav] ← z-50, inside sticky nav
+[Sidebar at left:0, top: 59-95px, w:52px]     ← z-30, fixed, dynamic top
+[Content - lg:pl-[52px]]                       ← normal flow
+[Footer - lg:pl-[52px]]                        ← mt-auto
+```
+
+Lint Results:
+- `bun run lint` passes with zero errors
+- Dev server compiles successfully
+
+Stage Summary:
+- Sidebar no longer overlaps with notification banner on desktop
+- Sidebar top position dynamically adjusts when banner is dismissed (95px → 59px with transition)
+- Nav content and notification banner properly offset for 52px sidebar
+- Notification banner dismiss state persists across navigation via Zustand store
+- "Plots Allotted" counter label corrected to "Families Resettled" for accuracy
+- All constants verified correct
+- All existing functionality preserved (mobile sidebar, hover-expand, etc.)
