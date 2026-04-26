@@ -20,9 +20,10 @@ const enc = (v: string | number | null | undefined): string | null =>
 const h = (v: string | null | undefined): string | null => hashPII(v ?? null);
 
 const MANDALS = [
-  { name: 'VR Puram', nameTelugu: 'వి.ఆర్.పురం', code: 'VRP', latitude: 17.560, longitude: 81.310, color: '#D97706' },
-  { name: 'Chintoor', nameTelugu: 'చింతూరు', code: 'CHN', latitude: 17.730, longitude: 81.395, color: '#0D9488' },
-  { name: 'Kunavaram', nameTelugu: 'కునవరం', code: 'KUN', latitude: 17.510, longitude: 81.235, color: '#EA580C' },
+  // Centroids derived from real OSM relations (10137298, 10137098, 10137099).
+  { name: 'VR Puram', nameTelugu: 'వి.ఆర్.పురం', code: 'VRP', latitude: 17.581, longitude: 81.398, color: '#D97706' },
+  { name: 'Chintoor', nameTelugu: 'చింతూరు', code: 'CHN', latitude: 17.756, longitude: 81.447, color: '#0D9488' },
+  { name: 'Kunavaram', nameTelugu: 'కునవరం', code: 'KUN', latitude: 17.655, longitude: 81.251, color: '#EA580C' },
 ];
 
 interface VillageDef {
@@ -47,7 +48,7 @@ const VILLAGES: Record<string, VillageDef[]> = {
     { name: 'Ramavaram', nameTelugu: 'రామవరం', code: 'RAM', latitude: 17.575, longitude: 81.300, familyCount: 170 },
     { name: 'Ramavarapadu', nameTelugu: 'రామవరపాడు', code: 'RAP', latitude: 17.520, longitude: 81.318, familyCount: 261 },
     { name: 'AV Gudem', nameTelugu: 'ఎ.వి గూడెం', code: 'AVG', latitude: 17.585, longitude: 81.315, familyCount: 256 },
-    { name: 'Waddigudem', nameTelugu: 'వడ్డిగూడెం', code: 'WAD', latitude: 17.540, longitude: 81.280, familyCount: 766 },
+    { name: 'Waddigudem', nameTelugu: 'వడ్డిగూడెం', code: 'WAD', latitude: 17.660, longitude: 81.373, familyCount: 766 },
     { name: 'Choppali', nameTelugu: 'చొప్పలి', code: 'CHO', latitude: 17.568, longitude: 81.338, familyCount: 270 },
     { name: 'Rajupeta Colony', nameTelugu: 'రాజుపేట కాలనీ', code: 'RJC', latitude: 17.525, longitude: 81.295, familyCount: 713 },
     { name: 'Chintharegupalli', nameTelugu: 'చింతరేగుపల్లి', code: 'CRP', latitude: 17.570, longitude: 81.292, familyCount: 436 },
@@ -61,15 +62,17 @@ const VILLAGES: Record<string, VillageDef[]> = {
     { name: 'Chintoor', nameTelugu: 'చింతూరు', code: 'CHT', latitude: 17.740, longitude: 81.405, familyCount: 1811 },
   ],
   KUN: [
-    { name: 'Wolforedpeta', nameTelugu: 'వోల్ఫోరెడ్‌పేట', code: 'WOL', latitude: 17.535, longitude: 81.220, familyCount: 62 },
-    { name: 'Kudalipadu', nameTelugu: 'కుడలిపాడు', code: 'KUD', latitude: 17.530, longitude: 81.240, familyCount: 226 },
-    { name: 'Kondrajupeta', nameTelugu: 'కొండ్రాజుపేట', code: 'KRJ', latitude: 17.540, longitude: 81.225, familyCount: 279 },
-    { name: 'Pandrajupalli', nameTelugu: 'పండ్రాజుపల్లి', code: 'PDP', latitude: 17.505, longitude: 81.212, familyCount: 342 },
-    { name: 'Tekubaka', nameTelugu: 'టేకుబాక', code: 'TEK', latitude: 17.520, longitude: 81.235, familyCount: 238 },
-    { name: 'Tekulaboru', nameTelugu: 'టేకులబోరు', code: 'TKB', latitude: 17.485, longitude: 81.222, familyCount: 1001 },
-    { name: 'Peddarkuru', nameTelugu: 'పెద్దర్కూరు', code: 'PDK', latitude: 17.470, longitude: 81.228, familyCount: 505 },
-    { name: 'S.Kothagudem', nameTelugu: 'ఎస్.కొత్తగూడెం', code: 'SKG', latitude: 17.515, longitude: 81.205, familyCount: 454 },
-    { name: 'Kunavaram', nameTelugu: 'కునవరం', code: 'KNV', latitude: 17.495, longitude: 81.238, familyCount: 1362 },
+    // Coordinates snapped to lie inside the real OSM Kunavaram boundary
+    // (lng 81.117–81.384, lat 17.564–17.747).
+    { name: 'Wolforedpeta', nameTelugu: 'వోల్ఫోరెడ్‌పేట', code: 'WOL', latitude: 17.728, longitude: 81.281, familyCount: 62 },
+    { name: 'Kudalipadu', nameTelugu: 'కుడలిపాడు', code: 'KUD', latitude: 17.698, longitude: 81.281, familyCount: 226 },
+    { name: 'Kondrajupeta', nameTelugu: 'కొండ్రాజుపేట', code: 'KRJ', latitude: 17.602, longitude: 81.239, familyCount: 279 },
+    { name: 'Pandrajupalli', nameTelugu: 'పండ్రాజుపల్లి', code: 'PDP', latitude: 17.639, longitude: 81.248, familyCount: 342 },
+    { name: 'Tekubaka', nameTelugu: 'టేకుబాక', code: 'TEK', latitude: 17.708, longitude: 81.263, familyCount: 238 },
+    { name: 'Tekulaboru', nameTelugu: 'టేకులబోరు', code: 'TKB', latitude: 17.608, longitude: 81.222, familyCount: 1001 },
+    { name: 'Peddarkuru', nameTelugu: 'పెద్దర్కూరు', code: 'PDK', latitude: 17.589, longitude: 81.238, familyCount: 505 },
+    { name: 'S.Kothagudem', nameTelugu: 'ఎస్.కొత్తగూడెం', code: 'SKG', latitude: 17.721, longitude: 81.263, familyCount: 454 },
+    { name: 'Kunavaram', nameTelugu: 'కునవరం', code: 'KNV', latitude: 17.720, longitude: 81.281, familyCount: 1362 },
   ],
 };
 
