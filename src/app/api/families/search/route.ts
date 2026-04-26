@@ -8,15 +8,14 @@ export async function GET(req: NextRequest) {
   const families = await db.family.findMany({
     where: {
       OR: [
-        { pdfNumber: { contains: q } },
-        { headName: { contains: q } },
-        { headNameTelugu: { contains: q } },
+        { pdfId: { contains: q } },
+        { beneficiaryName: { contains: q } },
       ],
     },
     select: {
       id: true,
-      pdfNumber: true,
-      headName: true,
+      pdfId: true,
+      beneficiaryName: true,
       village: { select: { name: true } },
     },
     take: 10,
@@ -24,8 +23,8 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     families: families.map(f => ({
-      pdfNumber: f.pdfNumber,
-      headName: f.headName,
+      pdfId: f.pdfId,
+      beneficiaryName: f.beneficiaryName,
       villageName: f.village.name,
       familyId: f.id,
     })),

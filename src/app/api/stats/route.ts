@@ -3,26 +3,28 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const [totalFamilies, totalMembers, firstSchemeEligible, statusCounts, plotCounts, mandals] = await Promise.all([
+    const [totalFamilies, totalMembers, eligibilityCounts, plotCounts, mandals] = await Promise.all([
       db.family.count(),
       db.familyMember.count(),
-      db.family.count({ where: { firstSchemeEligible: true } }),
-      db.family.groupBy({ by: ['sesStatus'], _count: true }),
-      db.newPlot.groupBy({ by: ['allotmentStatus'], _count: true }),
+      db.family.groupBy({ by: ['rrEligibility'], _count: true }),
+      db.plotAllotment.groupBy({ by: ['allotmentStatus'], _count: true }),
       db.mandal.findMany({ include: { villages: { select: { id: true } } } }),
     ]);
 
-    const statusMap: Record<string, number> = {};
-    statusCounts.forEach(s => { statusMap[s.sesStatus] = s._count; });
+    const eligibilityMap: Record<string, number> = {};
+    eligibilityCounts.forEach(s => { eligibilityMap[s.rrEligibility] = s._count; });
 
     const plotMap: Record<string, number> = {};
     plotCounts.forEach(p => { plotMap[p.allotmentStatus] = p._count; });
+
+    // First Scheme count = families with FirstScheme records
+    const firstSchemeCount = await db.firstScheme.count();
 
     const mandalStats = await Promise.all(mandals.map(async (m) => {
       const villageIds = m.villages.map(v => v.id);
       const [fCount, fsCount] = await Promise.all([
         db.family.count({ where: { villageId: { in: villageIds } } }),
-        db.family.count({ where: { villageId: { in: villageIds }, firstSchemeEligible: true } }),
+        db.firstScheme.count({ where: { family: { villageId: { in: villageIds } } } }),
       ]);
       return {
         id: m.id, name: m.name, nameTelugu: m.nameTelugu, code: m.code,
@@ -34,11 +36,9 @@ export async function GET() {
     return NextResponse.json({
       totalFamilies,
       totalMembers,
-      firstSchemeEligible,
-      surveyed: statusMap['SURVEYED'] || 0,
-      verified: statusMap['VERIFIED'] || 0,
-      approved: statusMap['APPROVED'] || 0,
-      rejected: statusMap['REJECTED'] || 0,
+      firstSchemeCount,
+      eligible: eligibilityMap['Eligible'] || 0,
+      ineligible: eligibilityMap['Ineligible'] || 0,
       plotsAllotted: plotMap['ALLOTTED'] || 0,
       plotsPending: plotMap['PENDING'] || 0,
       plotsPossessionGiven: plotMap['POSSESSION_GIVEN'] || 0,

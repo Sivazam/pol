@@ -9,12 +9,10 @@ export const MANDAL_COLORS = {
   KUN: '#EA580C', // Orange-600 — Kunavaram
 } as const;
 
-// Light theme status configurations
-export const SES_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  SURVEYED: { label: 'Surveyed', color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-300' },
-  VERIFIED: { label: 'Verified', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-300' },
-  APPROVED: { label: 'Approved', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-300' },
-  REJECTED: { label: 'Rejected', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-300' },
+// R&R Eligibility status configurations (replaces old SES_STATUS_CONFIG)
+export const RR_ELIGIBILITY_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  Eligible: { label: 'Eligible', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-300' },
+  Ineligible: { label: 'Ineligible', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-300' },
 };
 
 export const ALLOTMENT_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -23,7 +21,7 @@ export const ALLOTMENT_STATUS_CONFIG: Record<string, { label: string; color: str
   POSSESSION_GIVEN: { label: 'Possession Given', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-300' },
 };
 
-export const STATUS_TIMELINE = ['SURVEYED', 'VERIFIED', 'APPROVED', 'RELOCATED'] as const;
+export const STATUS_TIMELINE = ['Eligible', 'First Scheme', 'Plot Allotted', 'Relocated'] as const;
 
 // Simplified Godavari River path through the project area
 export const GODAVARI_RIVER_PATH: [number, number][] = [
@@ -58,10 +56,26 @@ export const GOV_COLORS = {
   tricolorGreen: '#138808',
 } as const;
 
-// Real project statistics
+// Caste codes used in SES data
+export const CASTE_CODES: Record<string, string> = {
+  St: 'Scheduled Tribe',
+  Sc: 'Scheduled Caste',
+  Bc: 'Backward Class',
+  Oc: 'Open Category',
+};
+
+// Caste codes as used in First Scheme data (uppercase)
+export const COMMUNITY_CODES: Record<string, string> = {
+  ST: 'Scheduled Tribe',
+  SC: 'Scheduled Caste',
+  BC: 'Backward Class',
+  OC: 'Open Category',
+};
+
+// Fallback project statistics
 export const PROJECT_STATS = {
   totalFamilies: 13961,
   totalMandals: 3,
   totalVillages: 30,
-  firstSchemeEligibleMembers: 9663,
+  rrEligibleMembers: 9663,
 } as const;

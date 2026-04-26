@@ -3,6 +3,9 @@ generator client {
 }
 
 datasource db {
+  // Phase A: SQLite (dev/demo). Phase B: switch to "postgresql".
+  // Schema is intentionally ANSI-clean — no provider-specific types — so the flip
+  // is a one-line change followed by `prisma migrate deploy`.
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
@@ -10,19 +13,20 @@ datasource db {
 model Mandal {
   id          String    @id @default(cuid())
   name        String
-  nameTelugu  String
+  nameTelugu  String?
   code        String    @unique
   latitude    Float
   longitude   Float
   color       String
   villages    Village[]
+  officers    User[]    @relation("OfficerMandal")
   createdAt   DateTime  @default(now())
 }
 
 model Village {
   id            String    @id @default(cuid())
   name          String
-  nameTelugu    String
+  nameTelugu    String?
   code          String    @unique
   mandalId      String
   mandal        Mandal    @relation(fields: [mandalId], references: [id])
@@ -33,39 +37,126 @@ model Village {
   createdAt     DateTime  @default(now())
 }
 
+// ─── Family ───────────────────────────────────────────────────────────
+// PII columns (`*Enc`) hold AES-256-GCM ciphertext (see src/lib/crypto.ts).
+// Never read these directly in API responses — always go through
+// serializeFamily() in src/lib/pii.ts so they are decrypted, role-masked,
+// and audit-eligible.
 model Family {
-  id                String    @id @default(cuid())
-  pdfNumber         String    @unique
-  headName          String
-  headNameTelugu    String
-  villageId         String
-  village           Village   @relation(fields: [villageId], references: [id])
-  caste             String?
-  landAcres         Float?
-  houseType         String?
-  sesStatus         String    @default("SURVEYED")
-  firstSchemeEligible Boolean @default(false)
-  members           FamilyMember[]
-  newPlot           NewPlot?
-  createdAt         DateTime  @default(now())
+  id                    String          @id @default(cuid())
+  pdfId                 String          @unique
+  hhsid                 String?
+  beneficiaryName       String
+  fathersName           String?
+  husbandName           String?
+  gender                String          @default("Male")
+  villageId             String
+  village               Village         @relation(fields: [villageId], references: [id])
+  sesNo                 Int?
+  caste                 String?
+  subCaste              String?
+  houseType             String?
+  doorNoEnc             String?
+  annualIncomeEnc       String?
+  farmerCategory        String?
+  bplApl                String?
+  rationCardNoEnc       String?
+  occupation            String?
+  rrEligibility         String          @default("Ineligible")
+  aliveOrDied           String          @default("Alive")
+  maritalStatus         String?
+  bankName              String?
+  bankBranch            String?
+  bankIfscEnc           String?
+  bankAccountNoEnc      String?
+  bankAccountActive     String?
+  aadharNoEnc           String?
+  aadharNoHash          String?
+  voterIdNoEnc          String?
+  voterIdNoHash         String?
+  periodOfResidence     Int?
+  photoUploaded         Boolean         @default(false)
+  residencePhoto        Boolean         @default(false)
+  housingProvision      String?
+  landForLand           String?
+  landSurveyNo          String?
+  landExtent            String?
+  offerDevelopedLand    String?
+  deletedAt             DateTime?
+  members               FamilyMember[]
+  firstScheme           FirstScheme?
+  plotAllotment         PlotAllotment?
+  createdAt             DateTime        @default(now())
+
+  @@index([aadharNoHash])
+  @@index([voterIdNoHash])
+  @@index([deletedAt])
 }
 
 model FamilyMember {
-  id          String    @id @default(cuid())
-  familyId    String
-  family      Family    @relation(fields: [familyId], references: [id])
-  name        String
-  nameTelugu  String?
-  relation    String
-  age         Int
-  gender      String
-  aadhar      String?
-  occupation  String?
-  isMinor     Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+  id                      String    @id @default(cuid())
+  familyId                String
+  family                  Family    @relation(fields: [familyId], references: [id])
+  beneficiaryName         String
+  fathersName             String?
+  husbandName             String?
+  wifeBirthSurname        String?
+  relation                String
+  gender                  String
+  age                     Int
+  agePnLaAct              Int?
+  aliveOrDied             String    @default("Alive")
+  maritalStatus           String?
+  caste                   String?
+  subCaste                String?
+  schoolRecords           String?
+  dobSscTcEnc             String?
+  occupation              String?
+  aadharNoEnc             String?
+  aadharNoHash            String?
+  voterIdNoEnc            String?
+  voterIdNoHash           String?
+  isPhysicallyHandicapped String?   @default("No")
+  isWidow                 String?   @default("NA")
+  isDivorced              String?   @default("NA")
+  bankName                String?
+  bankBranch              String?
+  bankIfscEnc             String?
+  bankAccountNoEnc        String?
+  bankAccountActive       String?
+  createdAt               DateTime  @default(now())
+
+  @@index([aadharNoHash])
 }
 
-model NewPlot {
+model FirstScheme {
+  id                             String    @id @default(cuid())
+  familyId                       String    @unique
+  family                         Family    @relation(fields: [familyId], references: [id])
+  rrUnit                         String?
+  sesNo                          Int?
+  ageAsOnDate                    Int?
+  community                      String?
+  profession                     String?
+  extentOfLandAcCts              Float?
+  structureValue                 Int?
+  residingPreceding3Years        String?
+  schemeProposedHouseOneTime     String?
+  extentLandToLandAcr            Float?
+  developedLandUrban20pct        String?
+  choiceAnnuityEmploymentOneTime Int?
+  subsistenceAllowance           Int?
+  scStAdditionalAllowance        Int?
+  transportCharges               Int?
+  cattleShedPettyShop            String?
+  artisanSmallTraderGrant        Int?
+  oneTimeResettlementAllowance   Int?
+  totalCompensation              Int?
+  remarks                        String?
+  createdAt                      DateTime  @default(now())
+}
+
+model PlotAllotment {
   id              String    @id @default(cuid())
   familyId        String    @unique
   family          Family    @relation(fields: [familyId], references: [id])
@@ -80,10 +171,35 @@ model NewPlot {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("VIEWER")
-  createdAt DateTime @default(now())
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  password           String    // bcrypt hash
+  name               String
+  role               String    @default("VIEWER") // ADMIN | OFFICER | VIEWER
+  mandalId           String?
+  mandal             Mandal?   @relation("OfficerMandal", fields: [mandalId], references: [id])
+  isActive           Boolean   @default(true)
+  lastLoginAt        DateTime?
+  mustChangePassword Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+// Append-only audit log. metadata is JSON-stringified text on SQLite,
+// becomes native jsonb on Postgres after migration.
+model AuditLog {
+  id           String    @id @default(cuid())
+  userId       String?
+  action       String
+  resourceType String
+  resourceId   String?
+  ip           String?
+  userAgent    String?
+  metadata     String?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
 }

@@ -14,19 +14,18 @@ export async function GET() {
 
     const result = await Promise.all(mandals.map(async (m) => {
       const villageIds = m.villages.map(v => v.id);
-      const [familyCount, firstSchemeCount] = await Promise.all([
+      const [familyCount, firstSchemeCount, eligibilityCounts] = await Promise.all([
         db.family.count({ where: { villageId: { in: villageIds } } }),
-        db.family.count({ where: { villageId: { in: villageIds }, firstSchemeEligible: true } }),
+        db.firstScheme.count({ where: { family: { villageId: { in: villageIds } } } }),
+        db.family.groupBy({
+          by: ['rrEligibility'],
+          _count: true,
+          where: { villageId: { in: villageIds } },
+        }),
       ]);
 
-      const sesCounts = await db.family.groupBy({
-        by: ['sesStatus'],
-        _count: true,
-        where: { villageId: { in: villageIds } },
-      });
-
       const statusBreakdown: Record<string, number> = {};
-      sesCounts.forEach(s => { statusBreakdown[s.sesStatus] = s._count; });
+      eligibilityCounts.forEach(s => { statusBreakdown[s.rrEligibility] = s._count; });
 
       return {
         id: m.id, name: m.name, nameTelugu: m.nameTelugu, code: m.code,

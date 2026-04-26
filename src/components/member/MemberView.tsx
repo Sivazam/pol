@@ -13,20 +13,19 @@ import ViewLayout from '@/components/shared/ViewLayout';
 
 interface MemberData {
   id: string;
-  name: string;
-  nameTelugu: string | null;
+  beneficiaryName: string;
   relation: string;
   age: number;
   gender: string;
-  aadhar: string | null;
+  aadharNo: string | null;
+  _piiAccess?: 'full' | 'masked' | 'none';
   occupation: string | null;
-  isMinor: boolean;
   family: {
     id: string;
-    pdfNumber: string;
-    headName: string;
-    headNameTelugu: string;
-    sesStatus: string;
+    pdfId: string;
+    beneficiaryName: string;
+    rrEligibility: string;
+    hasFirstScheme: boolean;
     village: {
       id: string; name: string; nameTelugu: string;
       mandal: { name: string; nameTelugu: string; color: string; };
@@ -78,7 +77,7 @@ export default function MemberView() {
     </ViewLayout>
   );
 
-  const initials = member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const initials = member.beneficiaryName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   const accentColor = member.family?.village?.mandal?.color || '#D97706';
 
   // Avatar color based on gender and relation
@@ -88,22 +87,29 @@ export default function MemberView() {
     return { bg: 'bg-amber-100', text: 'text-amber-700', ring: 'ring-amber-200' };
   };
   const avatarStyle = getAvatarStyle();
+  const showFullAadhaar = member._piiAccess === 'full';
+  const aadharDisplay = member.aadharNo
+    ? (showFullAadhaar ? member.aadharNo : `XXXX-XXXX-${member.aadharNo.slice(-4)}`)
+    : 'Not Available';
+  const aadharSublabel = member.aadharNo
+    ? (showFullAadhaar ? 'Full access' : 'Partially masked')
+    : 'Not registered';
 
   // Gender icon
   const GenderIcon = member.gender === 'Male' ? User : member.gender === 'Female' ? Heart : User;
 
   // Info items with enhanced styling
   const infoItems = [
-    { label: 'Age', value: `${member.age} years`, sublabel: member.isMinor ? 'Minor (Under 18)' : 'Adult', icon: Calendar, color: member.isMinor ? 'text-amber-600' : 'text-slate-600', bg: member.isMinor ? 'bg-amber-50' : 'bg-slate-50', border: member.isMinor ? 'border-amber-200' : 'border-slate-200' },
+    { label: 'Age', value: `${member.age} years`, sublabel: member.age < 18 ? 'Minor (Under 18)' : 'Adult', icon: Calendar, color: member.age < 18 ? 'text-amber-600' : 'text-slate-600', bg: member.age < 18 ? 'bg-amber-50' : 'bg-slate-50', border: member.age < 18 ? 'border-amber-200' : 'border-slate-200' },
     { label: 'Gender', value: member.gender, sublabel: member.gender === 'Male' ? '♂ Male' : member.gender === 'Female' ? '♀ Female' : member.gender, icon: GenderIcon, color: member.gender === 'Female' ? 'text-purple-600' : 'text-slate-600', bg: member.gender === 'Female' ? 'bg-purple-50' : 'bg-slate-50', border: member.gender === 'Female' ? 'border-purple-200' : 'border-slate-200' },
-    { label: 'Aadhaar Number', value: member.aadhar ? `XXXX-XXXX-${member.aadhar.slice(-4)}` : 'Not Available', sublabel: member.aadhar ? 'Partially masked' : 'Not registered', icon: CreditCard, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
+    { label: 'Aadhaar Number', value: aadharDisplay, sublabel: aadharSublabel, icon: CreditCard, color: showFullAadhaar ? 'text-emerald-700' : 'text-slate-600', bg: showFullAadhaar ? 'bg-emerald-50' : 'bg-slate-50', border: showFullAadhaar ? 'border-emerald-200' : 'border-slate-200' },
     { label: 'Occupation', value: member.occupation || 'Not Available', sublabel: member.occupation ? 'Employed' : 'Not specified', icon: Briefcase, color: member.occupation ? 'text-teal-600' : 'text-slate-400', bg: member.occupation ? 'bg-teal-50' : 'bg-slate-50', border: member.occupation ? 'border-teal-200' : 'border-slate-200' },
-    { label: 'Minor Status', value: member.isMinor ? 'Yes — Under 18' : 'No — Adult', sublabel: member.isMinor ? 'Eligible for child benefits' : 'Eligible for adult schemes', icon: Shield, color: member.isMinor ? 'text-orange-600' : 'text-green-600', bg: member.isMinor ? 'bg-orange-50' : 'bg-green-50', border: member.isMinor ? 'border-orange-200' : 'border-green-200' },
+    { label: 'Minor Status', value: member.age < 18 ? 'Yes — Under 18' : 'No — Adult', sublabel: member.age < 18 ? 'Eligible for child benefits' : 'Eligible for adult schemes', icon: Shield, color: member.age < 18 ? 'text-orange-600' : 'text-green-600', bg: member.age < 18 ? 'bg-orange-50' : 'bg-green-50', border: member.age < 18 ? 'border-orange-200' : 'border-green-200' },
     { label: 'Relation to Head', value: member.relation, sublabel: member.relation === 'Head' ? 'Primary applicant' : 'Family member', icon: Users, color: member.relation === 'Head' ? 'text-[#0F2B46]' : 'text-slate-600', bg: member.relation === 'Head' ? 'bg-[#0F2B46]/5' : 'bg-slate-50', border: member.relation === 'Head' ? 'border-[#0F2B46]/20' : 'border-slate-200' },
   ];
 
   return (
-    <ViewLayout maxWidth="max-w-3xl" navTitle={member.name} navTitleColor="#FBBF24" accentDotColor="#D97706" navSubtitle={member.family.pdfNumber}>
+    <ViewLayout maxWidth="max-w-3xl" navTitle={member.beneficiaryName} navTitleColor="#FBBF24" accentDotColor="#D97706" navSubtitle={member.family.pdfId}>
       <div ref={containerRef} className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
           {/* Avatar & Name - Enhanced */}
           <motion.div
@@ -125,8 +131,7 @@ export default function MemberView() {
               </div>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{member.name}</h1>
-            {member.nameTelugu && <p className="text-slate-500 mt-1 text-lg">{member.nameTelugu}</p>}
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{member.beneficiaryName}</h1>
 
             {/* Relation & Age badges */}
             <div className="flex items-center gap-2 mt-3">
@@ -139,9 +144,9 @@ export default function MemberView() {
                 {member.relation}
               </span>
               <span className={`text-xs px-3 py-1.5 rounded-full font-semibold border ${
-                member.isMinor ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-green-50 text-green-700 border-green-200'
+                member.age < 18 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-green-50 text-green-700 border-green-200'
               }`}>
-                {member.age} years {member.isMinor ? '(Minor)' : ''}
+                {member.age} years {member.age < 18 ? '(Minor)' : ''}
               </span>
             </div>
           </motion.div>
@@ -156,7 +161,7 @@ export default function MemberView() {
             <div className="gov-card p-3 text-center border-t-[3px] border-t-[#0F2B46]">
               <p className="text-xs text-slate-400 mb-1">Age</p>
               <p className="text-xl font-bold text-slate-900">{member.age}</p>
-              <p className="text-[10px] text-slate-400">{member.isMinor ? 'Minor' : 'Adult'}</p>
+              <p className="text-[10px] text-slate-400">{member.age < 18 ? 'Minor' : 'Adult'}</p>
             </div>
             <div className="gov-card p-3 text-center border-t-[3px] border-t-purple-400">
               <p className="text-xs text-slate-400 mb-1">Gender</p>
@@ -220,8 +225,8 @@ export default function MemberView() {
             </div>
             <div className="space-y-3">
               {[
-                { label: 'Family Head', value: `${member.family.headName}`, telugu: member.family.headNameTelugu, icon: Users, color: 'text-[#0F2B46]' },
-                { label: 'PDF Number', value: member.family.pdfNumber, icon: FileText, color: 'text-amber-700', isGovBadge: true },
+                { label: 'Beneficiary Name', value: `${member.family.beneficiaryName}`, icon: Users, color: 'text-[#0F2B46]' },
+                { label: 'PDF ID', value: member.family.pdfId, icon: FileText, color: 'text-amber-700', isGovBadge: true },
                 { label: 'Village', value: member.family.village.name, telugu: member.family.village.nameTelugu, icon: MapPin, color: 'text-slate-700' },
                 { label: 'Mandal', value: member.family.village.mandal.name, telugu: member.family.village.mandal.nameTelugu, icon: Eye, color: 'text-slate-700', accent: true },
               ].map((item, i) => (
@@ -251,7 +256,7 @@ export default function MemberView() {
 
             {/* View Family Button */}
             <button
-              onClick={() => navigateToFamily(member.family.pdfNumber, member.family.id)}
+              onClick={() => navigateToFamily(member.family.pdfId, member.family.id)}
               className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-[#0F2B46] hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
             >
               <Eye className="w-4 h-4" />

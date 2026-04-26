@@ -1,3 +1,14 @@
+# =============================================================================
+# Polavaram R&R Portal — Caddy reverse proxy
+# =============================================================================
+# DEVELOPMENT  : `caddy run` exposes :81 (HTTP, no TLS) for the dev workspace.
+# PRODUCTION   : Comment out the :81 block, uncomment the named-host block at
+#                the bottom, and run on the state DC server. Caddy auto-issues
+#                Let's Encrypt certs (or use `tls /path/cert.pem /path/key.pem`
+#                if the state PKI mandates an internal CA).
+# -----------------------------------------------------------------------------
+
+# ---- Development: plain HTTP on :81 ----------------------------------------
 :81 {
 	@transform_port_query {
 		query XTransformPort=*
@@ -21,3 +32,51 @@
 		}
 	}
 }
+
+# ---- Production template (uncomment & replace) -----------------------------
+# polavaram-rr.ap.gov.in {
+# 	# Use state PKI cert if Let's Encrypt is unavailable inside the DC.
+# 	# tls /etc/ssl/state/polavaram-rr.crt /etc/ssl/state/polavaram-rr.key
+# 	encode zstd gzip
+#
+# 	# Defense-in-depth security headers — Next.js also emits these but Caddy
+# 	# enforces them at the edge for static assets and error pages.
+# 	header {
+# 		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+# 		X-Frame-Options "DENY"
+# 		X-Content-Type-Options "nosniff"
+# 		Referrer-Policy "strict-origin-when-cross-origin"
+# 		Permissions-Policy "camera=(), microphone=(), geolocation=(self), payment=(), usb=()"
+# 		# Strip server fingerprints
+# 		-Server
+# 		-X-Powered-By
+# 	}
+#
+# 	# Rate-limit auth endpoints at the edge (caddy-ratelimit module).
+# 	# Requires `xcaddy build --with github.com/mholt/caddy-ratelimit`.
+# 	# rate_limit {
+# 	# 	zone auth_zone {
+# 	# 		key {remote_host}
+# 	# 		events 20
+# 	# 		window 1m
+# 	# 	}
+# 	# 	match path /api/auth/*
+# 	# }
+#
+# 	reverse_proxy localhost:3000 {
+# 		header_up Host {host}
+# 		header_up X-Forwarded-For {remote_host}
+# 		header_up X-Forwarded-Proto {scheme}
+# 		header_up X-Real-IP {remote_host}
+# 		# Forward only known headers; strip the rest.
+# 		header_up -Cookie-Set
+# 	}
+#
+# 	log {
+# 		output file /var/log/caddy/polavaram-rr.log {
+# 			roll_size 100mb
+# 			roll_keep 30
+# 		}
+# 		format json
+# 	}
+# }

@@ -15,7 +15,7 @@ export default function MobileMenuButton() {
   return (
     <button
       onClick={() => setSidebarOpen(!sidebarOpen)}
-      className="lg:hidden text-white/70 hover:text-white transition-colors p-1"
+      className="lg:hidden text-slate-500 dark:text-white/70 hover:text-slate-700 dark:hover:text-white transition-colors p-1"
       aria-label="Toggle navigation menu"
     >
       {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

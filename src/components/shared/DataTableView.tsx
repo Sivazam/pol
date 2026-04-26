@@ -16,23 +16,24 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { SES_STATUS_CONFIG, ALLOTMENT_STATUS_CONFIG, MANDAL_COLORS } from '@/lib/constants';
+import { RR_ELIGIBILITY_CONFIG, ALLOTMENT_STATUS_CONFIG, MANDAL_COLORS } from '@/lib/constants';
 import { Search, X, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Users, Loader2 } from 'lucide-react';
 
 interface FamilyRow {
   id: string;
-  pdfNumber: string;
-  headName: string;
-  headNameTelugu?: string;
-  sesStatus: string;
+  pdfId: string;
+  beneficiaryName: string;
+  rrEligibility: string;
   landAcres: number | null;
   memberCount: number;
   villageName: string;
   mandalName: string;
   mandalCode: string;
   mandalColor: string;
-  plotStatus: string;
-  firstSchemeEligible: boolean;
+  plotAllotment: {
+    allotmentStatus: string;
+  } | null;
+  hasFirstScheme: boolean;
 }
 
 interface DataTableViewProps {
@@ -44,17 +45,17 @@ interface DataTableViewProps {
 const PAGE_SIZE = 20;
 
 const COLUMNS = [
-  { key: 'pdfNumber', label: 'PDF Number', sortable: true },
-  { key: 'headName', label: 'Head Name', sortable: true },
+  { key: 'pdfId', label: 'PDF ID', sortable: true },
+  { key: 'beneficiaryName', label: 'Beneficiary Name', sortable: true },
   { key: 'villageName', label: 'Village', sortable: false },
   { key: 'mandalName', label: 'Mandal', sortable: false },
-  { key: 'sesStatus', label: 'SES Status', sortable: true },
+  { key: 'rrEligibility', label: 'R&R Eligibility', sortable: true },
   { key: 'landAcres', label: 'Land (acres)', sortable: true },
   { key: 'memberCount', label: 'Members', sortable: true },
-  { key: 'plotStatus', label: 'Plot Status', sortable: false },
+  { key: 'plotAllotment', label: 'Plot Status', sortable: false },
 ] as const;
 
-type SortKey = 'pdfNumber' | 'headName' | 'sesStatus' | 'landAcres' | 'memberCount';
+type SortKey = 'pdfId' | 'beneficiaryName' | 'rrEligibility' | 'landAcres' | 'memberCount';
 
 export default function DataTableView({ open, onOpenChange, mandalId }: DataTableViewProps) {
   const [families, setFamilies] = useState<FamilyRow[]>([]);
@@ -62,8 +63,8 @@ export default function DataTableView({ open, onOpenChange, mandalId }: DataTabl
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
-  const [sesFilter, setSesFilter] = useState('');
-  const [sortBy, setSortBy] = useState<SortKey>('pdfNumber');
+  const [rrFilter, setRrFilter] = useState('');
+  const [sortBy, setSortBy] = useState<SortKey>('pdfId');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(false);
 
@@ -78,7 +79,7 @@ export default function DataTableView({ open, onOpenChange, mandalId }: DataTabl
         all: 'true',
       });
       if (search) params.set('search', search);
-      if (sesFilter) params.set('sesStatus', sesFilter);
+      if (rrFilter) params.set('rrEligibility', rrFilter);
       if (mandalId) {
         params.delete('all');
         params.set('mandalId', mandalId);
@@ -94,7 +95,7 @@ export default function DataTableView({ open, onOpenChange, mandalId }: DataTabl
     } finally {
       setLoading(false);
     }
-  }, [page, search, sesFilter, sortBy, sortDir, mandalId]);
+  }, [page, search, rrFilter, sortBy, sortDir, mandalId]);
 
   useEffect(() => {
     if (open) {
@@ -103,7 +104,7 @@ export default function DataTableView({ open, onOpenChange, mandalId }: DataTabl
   }, [open, fetchFamilies]);
 
   const handleSort = (key: string) => {
-    if (key === 'villageName' || key === 'mandalName' || key === 'plotStatus') return;
+    if (key === 'villageName' || key === 'mandalName' || key === 'plotAllotment') return;
     const sortKey = key as SortKey;
     if (sortBy === sortKey) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -119,22 +120,22 @@ export default function DataTableView({ open, onOpenChange, mandalId }: DataTabl
     setPage(1);
   };
 
-  const handleSesFilter = (val: string) => {
-    setSesFilter(val);
+  const handleRrFilter = (val: string) => {
+    setRrFilter(val);
     setPage(1);
   };
 
   const exportCSV = () => {
-    const headers = ['PDF Number', 'Head Name', 'Village', 'Mandal', 'SES Status', 'Land (acres)', 'Members', 'Plot Status'];
+    const headers = ['PDF ID', 'Beneficiary Name', 'Village', 'Mandal', 'R&R Eligibility', 'Land (acres)', 'Members', 'Plot Status'];
     const rows = families.map(f => [
-      f.pdfNumber,
-      f.headName,
+      f.pdfId,
+      f.beneficiaryName,
       f.villageName,
       f.mandalName,
-      f.sesStatus,
+      f.rrEligibility,
       f.landAcres ?? 'N/A',
       f.memberCount,
-      f.plotStatus,
+      f.plotAllotment?.allotmentStatus || 'NOT_ALLOTTED',
     ]);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -188,18 +189,16 @@ export default function DataTableView({ open, onOpenChange, mandalId }: DataTabl
             )}
           </div>
 
-          {/* SES Status Filter */}
+          {/* R&R Eligibility Filter */}
           <div className="relative">
             <select
-              value={sesFilter}
-              onChange={e => handleSesFilter(e.target.value)}
+              value={rrFilter}
+              onChange={e => handleRrFilter(e.target.value)}
               className="pl-3 pr-8 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all"
             >
-              <option value="">All SES Status</option>
-              <option value="SURVEYED">Surveyed</option>
-              <option value="VERIFIED">Verified</option>
-              <option value="APPROVED">Approved</option>
-              <option value="REJECTED">Rejected</option>
+              <option value="">All R&R Eligibility</option>
+              <option value="Eligible">Eligible</option>
+              <option value="Ineligible">Ineligible</option>
             </select>
           </div>
 
@@ -222,7 +221,7 @@ export default function DataTableView({ open, onOpenChange, mandalId }: DataTabl
 
         {/* Table */}
         <div className="flex-1 overflow-auto">
-          <Table>
+          <Table className="table-row-hover">
             <TableHeader>
               <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
                 {COLUMNS.map(col => (
@@ -255,7 +254,7 @@ export default function DataTableView({ open, onOpenChange, mandalId }: DataTabl
                     <div className="flex flex-col items-center gap-3">
                       <Search className="w-8 h-8 text-slate-300" />
                       <span className="text-sm text-slate-500">No families found matching your criteria</span>
-                      <button onClick={() => { handleSearch(''); handleSesFilter(''); }} className="text-xs text-[#D97706] hover:underline font-medium">
+                      <button onClick={() => { handleSearch(''); handleRrFilter(''); }} className="text-xs text-[#D97706] hover:underline font-medium">
                         Clear filters
                       </button>
                     </div>
@@ -263,21 +262,21 @@ export default function DataTableView({ open, onOpenChange, mandalId }: DataTabl
                 </TableRow>
               ) : (
                 families.map(f => {
-                  const statusCfg = SES_STATUS_CONFIG[f.sesStatus] || SES_STATUS_CONFIG.SURVEYED;
-                  const plotCfg = ALLOTMENT_STATUS_CONFIG[f.plotStatus];
+                  const statusCfg = RR_ELIGIBILITY_CONFIG[f.rrEligibility] || RR_ELIGIBILITY_CONFIG.Eligible;
+                  const plotStatus = f.plotAllotment?.allotmentStatus || 'NOT_ALLOTTED';
+                  const plotCfg = ALLOTMENT_STATUS_CONFIG[plotStatus];
                   const mandalBorderColor = MANDAL_COLORS[f.mandalCode as keyof typeof MANDAL_COLORS] || f.mandalColor || '#64748B';
 
                   return (
                     <TableRow key={f.id} className="hover:bg-slate-50/80 transition-colors group">
                       <TableCell>
                         <span className="gov-badge px-2 py-0.5 rounded border bg-amber-50 border-amber-200 text-amber-700 tracking-wider text-xs font-semibold">
-                          {f.pdfNumber}
+                          {f.pdfId}
                         </span>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="text-sm font-medium text-slate-900">{f.headName}</p>
-                          {f.headNameTelugu && <p className="text-xs text-slate-400">{f.headNameTelugu}</p>}
+                          <p className="text-sm font-medium text-slate-900">{f.beneficiaryName}</p>
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-slate-600">{f.villageName}</TableCell>

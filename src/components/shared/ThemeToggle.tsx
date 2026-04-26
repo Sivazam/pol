@@ -17,7 +17,7 @@ export default function ThemeToggle() {
   if (!mounted) {
     return (
       <button
-        className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/10 border border-white/10 transition-all"
+        className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 transition-all"
         aria-label="Toggle theme"
       >
         <div className="w-4 h-4" />
@@ -29,15 +29,19 @@ export default function ThemeToggle() {
 
   return (
     <button
-      onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/10 border border-white/10 hover:bg-white/20 hover:border-white/20 transition-all"
+      onClick={() => {
+        document.documentElement.classList.add('theme-transitioning');
+        setTheme(isDark ? 'light' : 'dark');
+        setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 300);
+      }}
+      className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/20 hover:border-slate-300 dark:hover:border-white/20 transition-all"
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {isDark ? (
         <Sun className="w-4 h-4 text-amber-300" />
       ) : (
-        <Moon className="w-4 h-4 text-white/70" />
+        <Moon className="w-4 h-4 text-slate-500 dark:text-white/70" />
       )}
     </button>
   );

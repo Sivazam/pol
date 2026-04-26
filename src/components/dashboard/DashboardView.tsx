@@ -2,23 +2,24 @@
 
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
-import { SES_STATUS_CONFIG } from '@/lib/constants';
+import { RR_ELIGIBILITY_CONFIG } from '@/lib/constants';
 import CountUp from 'react-countup';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
-import { Users, Home, CheckCircle2, Clock, ChevronRight, Activity, LandPlot, MapPin, FileCheck, MapPinned, ClipboardCheck, KeyRound, BadgeCheck, TrendingUp, TrendingDown, Calendar, RefreshCw, AlertCircle, FileSignature, Key } from 'lucide-react';
+import { Users, Home, CheckCircle2, Clock, ChevronRight, BadgeCheck, MapPinned, ClipboardCheck, RefreshCw, FileSignature, Key, Settings2, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ViewLayout from '@/components/shared/ViewLayout';
 import DataTableView from '@/components/shared/DataTableView';
+import ProjectMap from '@/components/map/ProjectMap';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Stats {
   totalFamilies: number;
   totalMembers: number;
-  firstSchemeEligible: number;
-  surveyed: number;
-  verified: number;
-  approved: number;
-  rejected: number;
+  firstSchemeCount: number;
+  eligible: number;
+  ineligible: number;
   plotsAllotted: number;
   plotsPending: number;
   plotsPossessionGiven: number;
@@ -29,86 +30,20 @@ interface Stats {
   }>;
 }
 
-// GeoJSON mandal boundaries (embedded) — Real mandal names
-const MANDAL_GEOJSON = {
-  VRP: { name: 'VR Puram', coords: [[81.410,17.270],[81.430,17.280],[81.455,17.288],[81.478,17.290],[81.500,17.285],[81.518,17.275],[81.530,17.260],[81.538,17.245],[81.535,17.228],[81.525,17.215],[81.510,17.205],[81.490,17.198],[81.468,17.195],[81.448,17.200],[81.432,17.210],[81.420,17.222],[81.412,17.238],[81.408,17.255],[81.406,17.265],[81.410,17.270]] },
-  CHN: { name: 'Chintoor', coords: [[81.345,17.220],[81.368,17.230],[81.390,17.238],[81.410,17.240],[81.428,17.235],[81.442,17.225],[81.452,17.210],[81.458,17.195],[81.455,17.178],[81.445,17.165],[81.430,17.155],[81.412,17.148],[81.392,17.145],[81.372,17.150],[81.358,17.160],[81.348,17.175],[81.342,17.190],[81.340,17.205],[81.342,17.215],[81.345,17.220]] },
-  KUN: { name: 'Kunavaram', coords: [[81.268,17.168],[81.290,17.178],[81.315,17.185],[81.338,17.188],[81.358,17.182],[81.375,17.172],[81.388,17.158],[81.395,17.142],[81.392,17.125],[81.382,17.112],[81.368,17.102],[81.350,17.095],[81.330,17.092],[81.310,17.095],[81.292,17.105],[81.278,17.118],[81.270,17.132],[81.265,17.148],[81.264,17.160],[81.268,17.168]] },
+// R&R Eligibility colors
+const RR_COLORS: Record<string, string> = {
+  Eligible: '#16A34A',
+  Ineligible: '#DC2626',
 };
 
-// Godavari river path through the project area
-const GODAVARI_PATH = [
-  [81.250,17.280],[81.270,17.268],[81.290,17.255],[81.310,17.242],
-  [81.330,17.230],[81.348,17.220],[81.365,17.210],[81.380,17.200],
-  [81.395,17.190],[81.410,17.180],[81.425,17.170],[81.440,17.160],
-  [81.455,17.148],[81.468,17.138],[81.478,17.128],[81.490,17.118],
-  [81.505,17.108],[81.520,17.098],[81.538,17.088],[81.555,17.078],
-  [81.575,17.068],[81.595,17.058],[81.615,17.048],[81.638,17.038],
-];
-
-// District boundary (Eluru / Alluri Sitarama Raju districts)
-const DISTRICT_BOUNDARY = [
-  [81.220,17.320],[81.240,17.340],[81.268,17.355],[81.300,17.365],
-  [81.338,17.370],[81.375,17.368],[81.410,17.362],[81.440,17.352],
-  [81.465,17.338],[81.488,17.320],[81.505,17.300],[81.518,17.278],
-  [81.528,17.255],[81.535,17.230],[81.538,17.205],[81.535,17.180],
-  [81.528,17.158],[81.518,17.138],[81.505,17.120],[81.488,17.105],
-  [81.468,17.092],[81.445,17.082],[81.420,17.075],[81.392,17.072],
-  [81.365,17.072],[81.338,17.078],[81.315,17.088],[81.295,17.102],
-  [81.278,17.118],[81.265,17.138],[81.255,17.158],[81.248,17.180],
-  [81.242,17.205],[81.238,17.230],[81.235,17.255],[81.232,17.280],
-  [81.228,17.300],[81.222,17.315],[81.220,17.320],
-];
-
-// Map projection — adjusted for new mandal locations
-const MAP_BOUNDS = { minLng: 81.22, maxLng: 81.58, minLat: 17.06, maxLat: 17.32 };
-const SVG_W = 700;
-const SVG_H = 460;
-const MAP_PAD = 40;
-
-function project(lng: number, lat: number) {
-  const xRange = MAP_BOUNDS.maxLng - MAP_BOUNDS.minLng;
-  const yRange = MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat;
-  const x = MAP_PAD + ((lng - MAP_BOUNDS.minLng) / xRange) * (SVG_W - 2 * MAP_PAD);
-  const y = MAP_PAD + ((MAP_BOUNDS.maxLat - lat) / yRange) * (SVG_H - 2 * MAP_PAD);
-  return { x, y };
-}
-
-function polygonToSvgPath(coords: number[][]) {
-  return coords.map((c, i) => {
-    const p = project(c[0], c[1]);
-    return `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-  }).join(' ') + ' Z';
-}
-
-function pathToSvgLine(coords: number[][]) {
-  return coords.map((c, i) => {
-    const p = project(c[0], c[1]);
-    return `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-  }).join(' ');
-}
-
-function getCentroid(coords: number[][]) {
-  const sum = coords.reduce((acc, c) => ({ lng: acc.lng + c[0], lat: acc.lat + c[1] }), { lng: 0, lat: 0 });
-  return { lng: sum.lng / coords.length, lat: sum.lat / coords.length };
-}
-
-// SES Donut Chart colors
-const SES_COLORS: Record<string, string> = {
-  SURVEYED: '#94A3B8',
-  VERIFIED: '#D97706',
-  APPROVED: '#16A34A',
-  REJECTED: '#DC2626',
-};
-
-// Custom tooltip for SES donut chart
+// Custom tooltip for R&R Eligibility donut chart
 function SesDonutTooltip({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; payload: { status: string; count: number; fill: string } }> }) {
   if (!active || !payload || !payload.length) return null;
   const data = payload[0];
   return (
-    <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-lg">
-      <p className="text-xs font-semibold text-slate-900">{data.payload.status}</p>
-      <p className="text-xs text-slate-500">{data.value.toLocaleString()} families</p>
+    <div className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 shadow-lg">
+      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{data.payload.status}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{data.value.toLocaleString()} families</p>
     </div>
   );
 }
@@ -117,12 +52,12 @@ function SesDonutTooltip({ active, payload }: { active?: boolean; payload?: Arra
 function MandalBarTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
   if (!active || !payload || !payload.length) return null;
   return (
-    <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-lg">
-      <p className="text-xs font-semibold text-slate-900 mb-1">{label}</p>
+    <div className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 shadow-lg">
+      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 mb-1">{label}</p>
       {payload.map((entry, i) => (
-        <p key={i} className="text-xs text-slate-500">
+        <p key={i} className="text-xs text-slate-500 dark:text-slate-400">
           <span className="inline-block w-2 h-2 rounded-sm mr-1.5" style={{ backgroundColor: entry.color }} />
-          {entry.name}: <span className="font-medium text-slate-700">{entry.value.toLocaleString()}</span>
+          {entry.name}: <span className="font-medium text-slate-700 dark:text-slate-300">{entry.value.toLocaleString()}</span>
         </p>
       ))}
     </div>
@@ -144,37 +79,60 @@ function MandalBarLegend({ payload }: { payload?: Array<{ value: string; color: 
   );
 }
 
-// Recent Activity mock data
-const RECENT_ACTIVITIES = [
-  { id: 1, icon: BadgeCheck, description: 'Family PDF-VRP-VRP-0142 status changed to Verified', time: '2 hours ago', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { id: 2, icon: MapPinned, description: 'New plot allotted to PDF-CHN-CHN-0028', time: '5 hours ago', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
-  { id: 3, icon: ClipboardCheck, description: 'Family PDF-KUN-KUN-0045 SES survey completed', time: '8 hours ago', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
-  { id: 4, icon: KeyRound, description: 'Plot possession given for PDF-VRP-WAD-0018', time: '1 day ago', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  { id: 5, icon: FileCheck, description: 'Family PDF-CHN-AGK-0009 approved for relocation', time: '1 day ago', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
-];
+// Activity type to icon/color mapping
+const ACTIVITY_TYPE_CONFIG: Record<string, { icon: typeof BadgeCheck; color: string; bg: string; border: string }> = {
+  STATUS: { icon: BadgeCheck, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+  ALLOTMENT: { icon: MapPinned, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200' },
+  REGISTRATION: { icon: ClipboardCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+};
+
+// Helper to format relative time from ISO timestamp
+function formatRelativeTime(timestamp: string): string {
+  const now = new Date();
+  const then = new Date(timestamp);
+  const diffMs = now.getTime() - then.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return then.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
 
 // Section header component with accent and separator
-function SectionHeader({ title, accentColor = '#1E3A5F' }: { title: string; accentColor?: string }) {
+function SectionHeader({ title, accentColor = '#1E3A5F', subtitle }: { title: string; accentColor?: string; subtitle?: string }) {
   return (
     <div className="mb-5">
-      <h3
-        className="text-sm font-semibold text-slate-900 tracking-wider flex items-center"
-        style={{ borderLeft: `3px solid ${accentColor}`, paddingLeft: '10px' }}
-      >
-        {title}
-      </h3>
-      <div className="mt-2 h-px bg-gradient-to-r from-slate-200 via-slate-100 to-transparent" />
+      <div className="flex items-center gap-3">
+        <div className="w-1 h-5 rounded-full" style={{ backgroundColor: accentColor }} />
+        <div>
+          <h3 className="text-[14px] font-bold text-slate-900 dark:text-slate-100 tracking-wide" style={{ fontWeight: 700 }}>
+            {title}
+          </h3>
+          {subtitle && <p className="text-[12px] text-slate-400 mt-0.5 font-light">{subtitle}</p>}
+        </div>
+      </div>
+      <div className="mt-2 h-px bg-slate-200/60 dark:bg-slate-700/60" />
     </div>
   );
 }
 
 export default function DashboardView() {
   const navigateToMandal = useAppStore((s) => s.navigateToMandal);
-  const goBack = useAppStore((s) => s.goBack);
+  const navigateToVillage = useAppStore((s) => s.navigateToVillage);
+  const setView = useAppStore((s) => s.setView);
+  const animationsEnabled = useAppStore((s) => s.animationsEnabled);
+  const compactMode = useAppStore((s) => s.compactMode);
+  const dashboardWidgets = useAppStore((s) => s.dashboardWidgets);
+  const setDashboardWidget = useAppStore((s) => s.setDashboardWidget);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hoveredMandal, setHoveredMandal] = useState<string | null>(null);
   const [showDataTable, setShowDataTable] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [recentActivities, setRecentActivities] = useState<Array<{ id: string; type: string; description: string; timestamp: string }>>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const showFamilyTable = useAppStore((s) => s.showFamilyTable);
   const setShowFamilyTable = useAppStore((s) => s.setShowFamilyTable);
@@ -182,33 +140,27 @@ export default function DashboardView() {
   useEffect(() => {
     fetch('/api/stats')
       .then(res => res.json())
-      .then(data => { setStats(data); setLoading(false); })
+      .then(data => {
+        setStats(data);
+        setLoading(false);
+        setLastUpdated(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
+      })
       .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    if (!loading && containerRef.current) {
+    fetch('/api/activity?limit=5')
+      .then(r => r.json())
+      .then(data => setRecentActivities(data.activities || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!loading && containerRef.current && animationsEnabled) {
       const els = containerRef.current.querySelectorAll('.anim-in');
       gsap.fromTo(els, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power3.out' });
     }
-  }, [loading]);
-
-  // Memoize SVG paths
-  const mandalPaths = useMemo(() => ({
-    VRP: polygonToSvgPath(MANDAL_GEOJSON.VRP.coords),
-    CHN: polygonToSvgPath(MANDAL_GEOJSON.CHN.coords),
-    KUN: polygonToSvgPath(MANDAL_GEOJSON.KUN.coords),
-  }), []);
-
-  const districtPath = useMemo(() => polygonToSvgPath(DISTRICT_BOUNDARY), []);
-  const riverPath = useMemo(() => pathToSvgLine(GODAVARI_PATH), []);
-  const damPoint = useMemo(() => project(81.460, 17.230), []); // Polavaram Dam area
-
-  const mandalCentroids = useMemo(() => ({
-    VRP: { ...getCentroid(MANDAL_GEOJSON.VRP.coords), name: 'VR Puram' },
-    CHN: { ...getCentroid(MANDAL_GEOJSON.CHN.coords), name: 'Chintoor' },
-    KUN: { ...getCentroid(MANDAL_GEOJSON.KUN.coords), name: 'Kunavaram' },
-  }), []);
+  }, [loading, animationsEnabled]);
 
   // Map mandal code to stats
   const mandalStatsMap = useMemo(() => {
@@ -217,14 +169,12 @@ export default function DashboardView() {
     return map;
   }, [stats]);
 
-  // SES Donut chart data
-  const sesDonutData = useMemo(() => {
+  // R&R Eligibility donut chart data
+  const rrDonutData = useMemo(() => {
     if (!stats) return [];
     return [
-      { status: 'SURVEYED', count: stats.surveyed },
-      { status: 'VERIFIED', count: stats.verified },
-      { status: 'APPROVED', count: stats.approved },
-      { status: 'REJECTED', count: stats.rejected },
+      { status: 'Eligible', count: stats.eligible },
+      { status: 'Ineligible', count: stats.ineligible },
     ];
   }, [stats]);
 
@@ -235,18 +185,39 @@ export default function DashboardView() {
       name: m.name,
       code: m.code,
       'Family Count': m.familyCount,
-      'First Scheme Eligible': m.firstSchemeCount,
+      'First Scheme Count': m.firstSchemeCount,
     }));
   }, [stats]);
 
   if (loading) {
     return (
       <ViewLayout navTitle="DASHBOARD">
-        <div className="flex items-center justify-center py-32">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-2 border-slate-200 border-t-[#1E3A5F] rounded-full animate-spin" />
-            <p className="text-slate-400 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Dashboard</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 w-full">
+          {/* Header skeleton */}
+          <div className="skeleton-pulse h-24 rounded-xl" />
+          {/* Counter cards skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="skeleton-pulse h-32 rounded-xl" />
+            ))}
           </div>
+          {/* Progress skeleton */}
+          <div className="skeleton-pulse h-28 rounded-xl" />
+          {/* Map + sidebar skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 skeleton-pulse h-[420px] rounded-xl" />
+            <div className="space-y-4">
+              <div className="skeleton-pulse h-48 rounded-xl" />
+              <div className="skeleton-pulse h-32 rounded-xl" />
+            </div>
+          </div>
+          {/* Charts skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="skeleton-pulse h-80 rounded-xl" />
+            <div className="skeleton-pulse h-80 rounded-xl" />
+          </div>
+          {/* Activity skeleton */}
+          <div className="skeleton-pulse h-48 rounded-xl" />
         </div>
       </ViewLayout>
     );
@@ -254,14 +225,24 @@ export default function DashboardView() {
 
   if (!stats) return (
     <ViewLayout navTitle="DASHBOARD">
-      <div className="flex items-center justify-center py-32"><p className="text-red-600 font-medium">Failed to load data</p></div>
+      <div className="flex flex-col items-center justify-center py-32">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+        <p className="text-red-600 dark:text-red-400 font-medium mb-4">Failed to load data</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#0F2B46] hover:bg-[#1E3A5F] text-white rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Retry
+        </button>
+      </div>
     </ViewLayout>
   );
 
   const resettleCount = stats.plotsAllotted + stats.plotsPossessionGiven;
   const completionPct = stats.totalFamilies ? ((resettleCount / stats.totalFamilies) * 100).toFixed(1) : '0';
 
-  // Enhanced counter cards with gradient backgrounds and slate for Pending
+  // Counter cards — fake trend indicators removed
   const counterCards = [
     {
       label: 'Total Families',
@@ -273,13 +254,12 @@ export default function DashboardView() {
       topBorder: '#1E3A5F',
       gradientFrom: 'from-[#0F2B46]/[0.03]',
       gradientTo: 'to-[#1E3A5F]/[0.08]',
-      trend: '+12 this week',
-      trendUp: true,
+      trend: '',
       tooltip: 'Number of families affected by the Polavaram project across all 3 mandals',
     },
     {
       label: 'First Scheme Eligible',
-      value: stats.firstSchemeEligible,
+      value: stats.firstSchemeCount,
       icon: CheckCircle2,
       color: 'text-emerald-700',
       bg: 'bg-emerald-50',
@@ -287,8 +267,7 @@ export default function DashboardView() {
       topBorder: '#16A34A',
       gradientFrom: 'from-emerald-50/50',
       gradientTo: 'to-emerald-100/60',
-      trend: '+8 this week',
-      trendUp: true,
+      trend: '',
       tooltip: 'Families eligible for first scheme compensation under R&R policy',
     },
     {
@@ -301,8 +280,7 @@ export default function DashboardView() {
       topBorder: '#D97706',
       gradientFrom: 'from-amber-50/50',
       gradientTo: 'to-amber-100/60',
-      trend: '+5 this week',
-      trendUp: true,
+      trend: '',
       tooltip: 'Families who have been allotted plots or given possession for relocation',
     },
     {
@@ -315,82 +293,172 @@ export default function DashboardView() {
       topBorder: '#64748B',
       gradientFrom: 'from-slate-50/50',
       gradientTo: 'to-slate-100/60',
-      trend: '-3 this week',
-      trendUp: false,
+      trend: '',
       tooltip: 'Families still waiting for plot allotment',
     },
   ];
 
-  const sesData = [
-    { status: 'SURVEYED', count: stats.surveyed, ...SES_STATUS_CONFIG.SURVEYED },
-    { status: 'VERIFIED', count: stats.verified, ...SES_STATUS_CONFIG.VERIFIED },
-    { status: 'APPROVED', count: stats.approved, ...SES_STATUS_CONFIG.APPROVED },
-    { status: 'REJECTED', count: stats.rejected, ...SES_STATUS_CONFIG.REJECTED },
-  ];
-  const maxSes = Math.max(...sesData.map(d => d.count), 1);
+  // SES completion info — survey is complete for all families
+  const sesCompletePct = 100;
 
-  const mandalColorMap: Record<string, string> = { VRP: '#D97706', CHN: '#0D9488', KUN: '#EA580C' };
+  const rrData = [
+    { status: 'Eligible', count: stats.eligible, ...RR_ELIGIBILITY_CONFIG.Eligible },
+    { status: 'Ineligible', count: stats.ineligible, ...RR_ELIGIBILITY_CONFIG.Ineligible },
+  ];
+  const maxRr = Math.max(...rrData.map(d => d.count), 1);
 
   return (
     <ViewLayout navTitle="POLAVARAM R&R PORTAL">
-      <div ref={containerRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 w-full">
+      <div ref={containerRef} className={`page-slide-in max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${compactMode ? 'py-3 space-y-4' : 'py-6 space-y-8'} w-full`}>
         {/* Government Header Banner */}
-        <div className="anim-in opacity-0 p-6 sm:p-7 bg-gradient-to-r from-[#0F2B46] to-[#1E3A5F] text-white rounded-xl border border-[#0F2B46]/30 shadow-sm" style={{ background: 'linear-gradient(to right, #0F2B46, #1E3A5F)' }}>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <p className="text-[10px] tracking-[0.2em] uppercase text-amber-300/80 font-medium" style={{ fontFamily: 'var(--font-jetbrains)' }}>government of andhra pradesh</p>
-                <span className="text-white/20">|</span>
-                <span className="flex items-center gap-1 text-[10px] text-emerald-400/70" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-                  <RefreshCw className="w-2.5 h-2.5" /> Data updated: Just now
-                </span>
+        {dashboardWidgets.header && (
+        <div className="anim-in opacity-0 relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-[#1E293B] text-[#1A202C] dark:text-slate-100 shadow-[0_1px_3px_rgba(15,43,70,0.04),0_8px_24px_-12px_rgba(15,43,70,0.10)]">
+          {/* Tricolour top accent */}
+          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #FF9933 0% 33%, #E2E8F0 33% 66%, #138808 66% 100%)' }} />
+          <div className="p-6 sm:p-7">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-[10px] tracking-[0.2em] uppercase text-[#1E3A5F]/70 dark:text-amber-400/80 font-semibold" style={{ fontFamily: 'var(--font-jetbrains)' }}>Government of Andhra Pradesh</p>
+                  <span className="text-slate-300 dark:text-slate-600">·</span>
+                  <span className="flex items-center gap-1.5 text-[10px] text-emerald-600/80 dark:text-emerald-400/80" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    </span>
+                    Live · {lastUpdated || '…'}
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-[28px] font-semibold tracking-tight text-[#0F2B46] dark:text-slate-100 leading-tight" style={{ fontFamily: 'var(--font-inter)' }}>
+                  Rehabilitation &amp; Resettlement Dashboard
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 font-normal max-w-2xl">
+                  Water Resources Department · Monitoring{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">{stats.totalFamilies.toLocaleString()}</span> families across{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{stats.mandals.length}</span> mandals and{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{stats.mandals.reduce((s, m) => s + m.villageCount, 0)}</span> villages.
+                </p>
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight mt-1">Polavaram Project Rehabilitation & Resettlement</h1>
-              <p className="text-sm text-white/60 mt-1">Water Resources Department — Monitoring {stats.totalFamilies.toLocaleString()} affected families across {stats.mandals.length} mandals &amp; {stats.mandals.reduce((s, m) => s + m.villageCount, 0)} villages</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-400/30">
-                <LandPlot className="w-5 h-5 text-amber-400" />
+              <div className="flex items-center gap-2 shrink-0">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="h-9 px-3 rounded-lg flex items-center gap-1.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-all text-xs font-medium text-slate-600 dark:text-slate-300" title="Customize Dashboard">
+                      <Settings2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Customize</span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl p-4" align="end" sideOffset={8}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Settings2 className="w-4 h-4 text-[#1E3A5F] dark:text-amber-400" />
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Customize Dashboard</h4>
+                    </div>
+                    <div className="space-y-2.5">
+                      {[
+                        { key: 'header', label: 'Header Banner' },
+                        { key: 'counters', label: 'Counter Cards' },
+                        { key: 'progress', label: 'Progress Bar' },
+                        { key: 'map', label: 'Project Area Map' },
+                        { key: 'rrEligibility', label: 'R&R Eligibility Overview' },
+                        { key: 'mandalCards', label: 'Mandal Cards' },
+                        { key: 'charts', label: 'Charts' },
+                        { key: 'activity', label: 'Recent Activity' },
+                      ].map((widget) => (
+                        <label key={widget.key} className="flex items-center gap-2.5 cursor-pointer group">
+                          <Checkbox
+                            checked={dashboardWidgets[widget.key] ?? true}
+                            onCheckedChange={(checked) => setDashboardWidget(widget.key, !!checked)}
+                            className="data-[state=checked]:bg-[#1E3A5F] data-[state=checked]:border-[#1E3A5F] dark:data-[state=checked]:bg-amber-600 dark:data-[state=checked]:border-amber-600"
+                          />
+                          <span className="text-xs text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">{widget.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
         </div>
+        )}
 
-        {/* Counter Cards - Enhanced with gradient bg, top border, pill trends, hover lift */}
+        {/* Always-visible Customize button (fallback when header is hidden) */}
+        {!dashboardWidgets.header && (
+          <div className="flex justify-end">
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm">
+                  <Settings2 className="w-3.5 h-3.5" />
+                  Customize
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl p-4" align="end" sideOffset={8}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Settings2 className="w-4 h-4 text-[#1E3A5F] dark:text-amber-400" />
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Customize Dashboard</h4>
+                </div>
+                <div className="space-y-2.5">
+                  {[
+                    { key: 'header', label: 'Header Banner' },
+                    { key: 'counters', label: 'Counter Cards' },
+                    { key: 'progress', label: 'Progress Bar' },
+                    { key: 'map', label: 'Project Area Map' },
+                    { key: 'rrEligibility', label: 'R&R Eligibility Overview' },
+                    { key: 'mandalCards', label: 'Mandal Cards' },
+                    { key: 'charts', label: 'Charts' },
+                    { key: 'activity', label: 'Recent Activity' },
+                  ].map((widget) => (
+                    <label key={widget.key} className="flex items-center gap-2.5 cursor-pointer group">
+                      <Checkbox
+                        checked={dashboardWidgets[widget.key] ?? true}
+                        onCheckedChange={(checked) => setDashboardWidget(widget.key, !!checked)}
+                        className="data-[state=checked]:bg-[#1E3A5F] data-[state=checked]:border-[#1E3A5F] dark:data-[state=checked]:bg-amber-600 dark:data-[state=checked]:border-amber-600"
+                      />
+                      <span className="text-xs text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">{widget.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+
+        {/* Counter Cards — refined: subtle shadow, top accent stripe, clean tabular numbers */}
+        {dashboardWidgets.counters && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {counterCards.map((card, i) => (
             <div
               key={i}
-              className="anim-in opacity-0 relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-slate-300 cursor-default"
+              className="anim-in opacity-0 group relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-[#1E293B] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-12px_rgba(15,43,70,0.18)] cursor-default"
+              style={{ animationDelay: `${i * 80}ms`, boxShadow: '0 1px 2px rgba(15,43,70,0.04)' }}
               title={card.tooltip}
             >
-              {/* Thin colored top border */}
-              <div className="h-[3px] w-full" style={{ backgroundColor: card.topBorder }} />
-              {/* Gradient background overlay */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} pointer-events-none`} style={{ top: '3px' }} />
+              {/* Top accent stripe */}
+              <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, ${card.topBorder} 0%, ${card.topBorder}55 100%)` }} />
               <div className="relative p-5 sm:p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`p-2.5 rounded-lg ${card.bg} border ${card.borderColor}`}><card.icon className={`w-4 h-4 ${card.color}`} /></div>
-                  {/* Pill-shaped trend badge */}
-                  <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-2.5 py-1 rounded-full ${card.trendUp ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-red-50 text-red-500 border border-red-200'}`} style={{ fontFamily: 'var(--font-jetbrains)' }}>
-                    {card.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    {card.trend}
+                <div className="flex items-start justify-between mb-4">
+                  <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-slate-500 dark:text-slate-400" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                    {card.label}
                   </span>
+                  <div className={`p-2 rounded-lg ${card.bg} border ${card.borderColor}`}>
+                    <card.icon className={`w-3.5 h-3.5 ${card.color}`} strokeWidth={2.2} />
+                  </div>
                 </div>
-                <div className="counter-value text-2xl sm:text-3xl font-bold text-slate-900">
-                  <CountUp end={card.value} duration={2} separator="," />
+                <div className="text-3xl sm:text-[2.1rem] font-semibold tabular-nums tracking-tight text-slate-900 dark:text-slate-100 leading-none" style={{ fontFamily: 'var(--font-inter)' }}>
+                  <CountUp end={card.value} duration={1.6} separator="," />
                 </div>
-                <p className="mt-1 text-xs sm:text-sm text-slate-500">{card.label}</p>
+                <div className="mt-2 h-px bg-slate-100 dark:bg-slate-800" />
+                <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500 leading-snug">{card.tooltip}</p>
               </div>
             </div>
           ))}
         </div>
+        )}
 
         {/* View All Families Button */}
         <div className="anim-in opacity-0 flex justify-center">
           <button
             onClick={() => setShowDataTable(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-[#1E3A5F] hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
+            className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-[#1E3A5F] dark:text-amber-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
           >
             <Users className="w-4 h-4" />
             View All Families
@@ -398,8 +466,15 @@ export default function DashboardView() {
         </div>
 
         {/* Rehabilitation Progress Overview - Enhanced */}
-        <div className="anim-in opacity-0 gov-card p-6">
-          <SectionHeader title="REHABILITATION PROGRESS" accentColor="#D97706" />
+        {dashboardWidgets.progress && (
+        <div className="anim-in opacity-0 gov-card p-6 section-reveal">
+          <SectionHeader title="REHABILITATION PROGRESS" accentColor="#D97706" subtitle="Track family resettlement status" />
+          {/* SES Survey Status - complete for all families */}
+          <div className="flex items-center gap-3 mb-4 px-3 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+            <BadgeCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">SES Survey Complete</span>
+            <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70">— All {stats.totalFamilies.toLocaleString()} families surveyed across 3 mandals</span>
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
             <span className="text-xs text-slate-400" style={{ fontFamily: 'var(--font-jetbrains)' }}>{resettleCount.toLocaleString()} of {stats.totalFamilies.toLocaleString()} families resettled</span>
           </div>
@@ -417,11 +492,11 @@ export default function DashboardView() {
               ))}
             </div>
             {/* Progress bar - thicker h-3 */}
-            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+            <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 progress-bar-animated">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${completionPct}%` }}
-                transition={{ duration: 1.5, delay: 0.5, ease: 'easeOut' }}
+                transition={{ duration: animationsEnabled ? 1.5 : 0, delay: animationsEnabled ? 0.5 : 0, ease: 'easeOut' }}
                 className="h-full rounded-full bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500"
                 style={{ boxShadow: '0 0 12px rgba(16, 185, 129, 0.3)' }}
               />
@@ -435,7 +510,7 @@ export default function DashboardView() {
               >
                 {/* Diamond shape */}
                 <div
-                  className="w-2.5 h-2.5 rotate-45 bg-white border-2 border-slate-300 mx-auto"
+                  className="w-2.5 h-2.5 rotate-45 bg-white dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-500 mx-auto"
                   style={{ marginTop: '2px' }}
                 />
               </div>
@@ -462,153 +537,70 @@ export default function DashboardView() {
             </div>
           </div>
         </div>
+        )}
 
+        {(dashboardWidgets.map || dashboardWidgets.rrEligibility || dashboardWidgets.mandalCards) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-          {/* GeoJSON Map */}
-          <div className="lg:col-span-2 anim-in opacity-0">
+          {/* Interactive Map using ProjectMap component */}
+          {dashboardWidgets.map && (
+          <div className="lg:col-span-2 anim-in opacity-0 section-reveal">
             <div className="gov-card p-5 sm:p-6">
-              <SectionHeader title="PROJECT AREA MAP" accentColor="#1E3A5F" />
-              <div className="relative w-full h-[300px] sm:h-[420px] bg-[#F8FAFC] rounded-lg overflow-hidden border border-slate-200">
-                <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full h-full">
-                  <defs>
-                    <pattern id="map-grid" width="25" height="25" patternUnits="userSpaceOnUse">
-                      <path d="M 25 0 L 0 0 0 25" fill="none" stroke="rgba(148,163,184,0.12)" strokeWidth="0.5"/>
-                    </pattern>
-                    <filter id="map-shadow" x="-5%" y="-5%" width="110%" height="110%">
-                      <feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.1"/>
-                    </filter>
-                  </defs>
-
-                  {/* Background */}
-                  <rect width={SVG_W} height={SVG_H} fill="#F8FAFC"/>
-                  <rect width={SVG_W} height={SVG_H} fill="url(#map-grid)"/>
-
-                  {/* District boundary */}
-                  <path d={districtPath} fill="#F1F5F9" stroke="#CBD5E1" strokeWidth="1.5" strokeDasharray="6,3" opacity="0.7"/>
-
-                  {/* Godavari River */}
-                  <path d={riverPath} fill="none" stroke="#3B82F6" strokeWidth="3" opacity="0.5" strokeDasharray="1200">
-                    <animate attributeName="stroke-dashoffset" from="1200" to="0" dur="3s" fill="freeze"/>
-                  </path>
-                  <path d={riverPath} fill="none" stroke="#60A5FA" strokeWidth="1.5" opacity="0.3"/>
-
-                  {/* River label */}
-                  {(() => {
-                    const mid = GODAVARI_PATH[Math.floor(GODAVARI_PATH.length / 2)];
-                    const p = project(mid[0], mid[1]);
-                    return <text x={p.x + 10} y={p.y - 8} fill="#3B82F6" fontSize="9" fontWeight="500" opacity="0.6" transform={`rotate(-35, ${p.x + 10}, ${p.y - 8})`}>GODAVARI RIVER</text>;
-                  })()}
-
-                  {/* Mandal polygons */}
-                  {Object.entries(MANDAL_GEOJSON).map(([code, data]) => {
-                    const color = mandalColorMap[code];
-                    const isHovered = hoveredMandal === code;
-                    const mStats = mandalStatsMap[code];
-                    const centroid = mandalCentroids[code as keyof typeof mandalCentroids];
-                    const cp = project(centroid.lng, centroid.lat);
-
-                    return (
-                      <g
-                        key={code}
-                        className="cursor-pointer"
-                        onClick={() => {
-                          if (mStats) navigateToMandal(mStats.id);
-                        }}
-                        onMouseEnter={() => setHoveredMandal(code)}
-                        onMouseLeave={() => setHoveredMandal(null)}
-                      >
-                        {/* Polygon fill */}
-                        <path
-                          d={mandalPaths[code as keyof typeof mandalPaths]}
-                          fill={color}
-                          fillOpacity={isHovered ? 0.25 : 0.12}
-                          stroke={color}
-                          strokeWidth={isHovered ? 2.5 : 1.5}
-                          strokeOpacity={isHovered ? 0.8 : 0.5}
-                          style={{ transition: 'all 0.3s ease' }}
-                          filter="url(#map-shadow)"
-                        />
-                        {/* Pulse animation on hover */}
-                        {isHovered && (
-                          <circle cx={cp.x} cy={cp.y} r="20" fill={color} opacity="0.15">
-                            <animate attributeName="r" values="15;25;15" dur="1.5s" repeatCount="indefinite"/>
-                            <animate attributeName="opacity" values="0.15;0.05;0.15" dur="1.5s" repeatCount="indefinite"/>
-                          </circle>
-                        )}
-                        {/* Center dot */}
-                        <circle cx={cp.x} cy={cp.y} r={isHovered ? 5 : 3.5} fill={color} style={{ transition: 'r 0.3s ease' }}/>
-                        {/* Mandal name */}
-                        <text x={cp.x} y={cp.y - 14} fill={color} fontSize="10" fontWeight="600" textAnchor="middle" opacity={isHovered ? 1 : 0.85}>{data.name}</text>
-                        {/* Family count */}
-                        {mStats && (
-                          <text x={cp.x} y={cp.y + 22} fill="#64748B" fontSize="8" textAnchor="middle" opacity={isHovered ? 0.8 : 0.5}>{mStats.familyCount} families</text>
-                        )}
-                      </g>
-                    );
-                  })}
-
-                  {/* Dam marker */}
-                  <g>
-                    <circle cx={damPoint.x} cy={damPoint.y} r="16" fill="#D97706" opacity="0.15">
-                      <animate attributeName="r" values="12;20;12" dur="2.5s" repeatCount="indefinite"/>
-                      <animate attributeName="opacity" values="0.15;0.05;0.15" dur="2.5s" repeatCount="indefinite"/>
-                    </circle>
-                    {/* Diamond shape for dam */}
-                    <polygon
-                      points={`${damPoint.x},${damPoint.y - 6} ${damPoint.x + 5},${damPoint.y} ${damPoint.x},${damPoint.y + 6} ${damPoint.x - 5},${damPoint.y}`}
-                      fill="#D97706"
-                      stroke="#FFF"
-                      strokeWidth="1"
-                    />
-                    <text x={damPoint.x + 12} y={damPoint.y + 3} fill="#92400E" fontSize="8" fontWeight="700">POLAVARAM DAM</text>
-                  </g>
-
-                  {/* Enhanced Legend - larger, squares, family counts, box-shadow */}
-                  <rect x="12" y={SVG_H - 68} width="200" height="58" rx="8" fill="white" stroke="#E2E8F0" strokeWidth="1" opacity="0.95" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))' }}/>
-                  {/* VR Puram - square shape + family count */}
-                  <rect x="24" y={SVG_H - 52} width="8" height="8" rx="1.5" fill="#D97706"/>
-                  <text x="38" y={SVG_H - 45} fill="#475569" fontSize="9" fontWeight="500">VR Puram</text>
-                  <text x="96" y={SVG_H - 45} fill="#94A3B8" fontSize="8">{mandalStatsMap.VRP?.familyCount ?? ''}</text>
-                  {/* Chintoor - square shape + family count */}
-                  <rect x="120" y={SVG_H - 52} width="8" height="8" rx="1.5" fill="#0D9488"/>
-                  <text x="134" y={SVG_H - 45} fill="#475569" fontSize="9" fontWeight="500">Chintoor</text>
-                  <text x="192" y={SVG_H - 45} fill="#94A3B8" fontSize="8">{mandalStatsMap.CHN?.familyCount ?? ''}</text>
-                  {/* Kunavaram - square shape + family count */}
-                  <rect x="24" y={SVG_H - 34} width="8" height="8" rx="1.5" fill="#EA580C"/>
-                  <text x="38" y={SVG_H - 27} fill="#475569" fontSize="9" fontWeight="500">Kunavaram</text>
-                  <text x="108" y={SVG_H - 27} fill="#94A3B8" fontSize="8">{mandalStatsMap.KUN?.familyCount ?? ''}</text>
-                  {/* River line legend */}
-                  <line x1="130" y1={SVG_H - 30} x2="155" y2={SVG_H - 30} stroke="#3B82F6" strokeWidth="1.5" opacity="0.6"/>
-                  <text x="160" y={SVG_H - 27} fill="#475569" fontSize="9" fontWeight="500">River</text>
-                </svg>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <SectionHeader title="PROJECT AREA MAP" accentColor="#1E3A5F" subtitle="Click on mandal to explore" />
               </div>
-              <p className="mt-2 text-xs text-slate-400 text-center">Click on any mandal zone to explore details</p>
-              {/* Hover info panel */}
-              {hoveredMandal && mandalStatsMap[hoveredMandal] && (
-                <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-4">
-                  <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: mandalColorMap[hoveredMandal] }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">{mandalStatsMap[hoveredMandal].name} Mandal</p>
-                    <p className="text-xs text-slate-500">{mandalStatsMap[hoveredMandal].villageCount} villages · {mandalStatsMap[hoveredMandal].familyCount} families · {mandalStatsMap[hoveredMandal].firstSchemeCount} first-scheme eligible</p>
+              <div className="relative">
+                <ProjectMap
+                  center={[81.32, 17.63]}
+                  zoom={9.5}
+                  maxBounds={{ sw: [81.15, 17.40], ne: [81.70, 17.90] }}
+                  height="420px"
+                  showMandals={true}
+                  showVillages={false}
+                  showVillagePolygons={false}
+                  showDam={true}
+                  showControls={true}
+                  showLegend={true}
+                  showLayerToggles={false}
+                  onMandalClick={(code, id) => {
+                    const mStats = mandalStatsMap[code];
+                    if (mStats) navigateToMandal(mStats.id);
+                  }}
+                  onVillageClick={(villageId, villageName) => {
+                    navigateToVillage(villageId);
+                  }}
+                  className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700"
+                />
+                {/* Stat badges overlaid on map (top-left corner) */}
+                <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5 pointer-events-none">
+                  <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-md px-2.5 py-1 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Villages</span>
+                    <span className="ml-1.5 text-xs font-bold text-slate-900 dark:text-slate-100">{stats.mandals.reduce((s, m) => s + m.villageCount, 0)}</span>
                   </div>
-                  <button
-                    onClick={() => navigateToMandal(mandalStatsMap[hoveredMandal].id)}
-                    className="shrink-0 text-xs text-[#1E3A5F] font-medium hover:underline flex items-center gap-1"
-                  >
-                    Explore <ChevronRight className="w-3 h-3" />
-                  </button>
+                  <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-md px-2.5 py-1 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">R&R Eligible</span>
+                    <span className="ml-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">{stats.totalFamilies > 0 ? Math.round((stats.eligible / stats.totalFamilies) * 100) : 0}%</span>
+                  </div>
+                  <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-md px-2.5 py-1 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Families</span>
+                    <span className="ml-1.5 text-xs font-bold text-[#1E3A5F] dark:text-amber-400">{stats.totalFamilies.toLocaleString()}</span>
+                  </div>
                 </div>
-              )}
+              </div>
+              <p className="mt-2 text-xs text-slate-400 text-center flex items-center justify-center gap-2">
+                <MapPinned className="w-3 h-3" /> Click on mandals to explore • Scroll to zoom • Drag to pan
+              </p>
             </div>
           </div>
+          )}
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* SES Status Overview - Enhanced with percentages, taller bars, rounded corners */}
+            {/* R&R Eligibility Overview - Enhanced with percentages, taller bars, rounded corners */}
+            {dashboardWidgets.rrEligibility && (
             <div className="anim-in opacity-0 gov-card p-5 sm:p-6">
-              <SectionHeader title="SES STATUS OVERVIEW" accentColor="#D97706" />
+              <SectionHeader title="R&R ELIGIBILITY OVERVIEW" accentColor="#D97706" subtitle="SES complete for all families — eligibility determined" />
               <div className="space-y-4">
-                {sesData.map((item) => {
+                {rrData.map((item) => {
                   const pct = stats.totalFamilies ? ((item.count / stats.totalFamilies) * 100).toFixed(1) : '0';
                   return (
                     <div key={item.status}>
@@ -616,17 +608,15 @@ export default function DashboardView() {
                         <span className={`text-xs font-semibold ${item.color}`}>{item.label}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-slate-500 counter-value"><CountUp end={item.count} duration={1.5} separator="," /></span>
-                          <span className="text-[10px] text-slate-400 font-medium px-1.5 py-0.5 bg-slate-50 rounded" style={{ fontFamily: 'var(--font-jetbrains)' }}>{pct}%</span>
+                          <span className="text-[10px] text-slate-400 font-medium px-1.5 py-0.5 bg-slate-50 dark:bg-slate-800 rounded">{pct}%</span>
                         </div>
                       </div>
-                      {/* Taller bars with rounded corners */}
-                      <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                         <motion.div
                           initial={{ width: 0 }}
-                          animate={{ width: `${(item.count / maxSes) * 100}%` }}
-                          transition={{ duration: 1, delay: 0.3 }}
-                          className="h-full rounded-full"
-                          style={{ backgroundColor: item.status === 'SURVEYED' ? '#94A3B8' : item.status === 'VERIFIED' ? '#D97706' : item.status === 'APPROVED' ? '#16A34A' : '#DC2626', opacity: 0.7, borderRadius: '9999px' }}
+                          animate={{ width: `${(item.count / maxRr) * 100}%` }}
+                          transition={{ duration: animationsEnabled ? 1.2 : 0, ease: 'easeOut' }}
+                          className={`h-full rounded-full ${item.bg}`}
                         />
                       </div>
                     </div>
@@ -634,106 +624,92 @@ export default function DashboardView() {
                 })}
               </div>
             </div>
+            )}
 
-            {/* Mandal Cards */}
-            <div className="space-y-3">
-              {stats.mandals.map((mandal, i) => {
-                const color = mandalColorMap[mandal.code] || '#D97706';
-                return (
-                  <motion.div
-                    key={mandal.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + i * 0.15 }}
-                    className="gov-card p-5 cursor-pointer group border-l-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-                    style={{ borderLeftColor: color }}
-                    onClick={() => navigateToMandal(mandal.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{mandal.name}</p>
-                          <p className="text-xs text-slate-400">{mandal.villageCount} villages</p>
-                        </div>
+            {/* Mandal Quick Cards */}
+            {dashboardWidgets.mandalCards && (
+            <div className="anim-in opacity-0 space-y-3">
+              <SectionHeader title="MANDAL COMPARISON" accentColor="#0D9488" subtitle="Across 3 project mandals" />
+              {stats.mandals.map((mandal, i) => (
+                <motion.div
+                  key={mandal.id}
+                  className="group gov-card p-4 cursor-pointer hover:shadow-md transition-all"
+                  whileHover={{ scale: 1.01 }}
+                  onClick={() => navigateToMandal(mandal.id)}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: animationsEnabled ? i * 0.1 : 0 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: mandal.color }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{mandal.name}</h4>
+                        <span className="text-xs font-bold" style={{ color: mandal.color }}>{mandal.familyCount.toLocaleString()}</span>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-slate-900 counter-value"><CountUp end={mandal.familyCount} duration={1.5} separator="," /></p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-slate-500">{mandal.villageCount} villages</span>
+                        <span className="text-slate-300">·</span>
                         <p className="text-xs text-slate-400">families</p>
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-2 text-xs">
-                      <span className="text-emerald-700 font-medium">{mandal.firstSchemeCount} eligible</span>
-                      <span className="text-slate-300">|</span>
-                      <span className="text-slate-400">First Scheme</span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-1 text-xs text-slate-400 group-hover:text-slate-600 transition-colors">
-                      <span>View details</span><ChevronRight className="w-3 h-3" />
-                    </div>
-                  </motion.div>
-                );
-              })}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2 text-xs">
+                    <span className="text-emerald-700 font-medium">{mandal.firstSchemeCount} eligible</span>
+                    <span className="text-slate-300">|</span>
+                    <span className="text-slate-400">First Scheme</span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-xs text-slate-400 group-hover:text-slate-600 transition-colors">
+                    <span>View details</span><ChevronRight className="w-3 h-3" />
+                  </div>
+                </motion.div>
+              ))}
             </div>
+            )}
           </div>
         </div>
+        )}
 
         {/* Charts Section - 2-column grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-          {/* A) SES Status Donut Chart */}
+        {dashboardWidgets.charts && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 section-reveal">
+          {/* A) R&R Eligibility Donut Chart */}
           <div className="anim-in opacity-0 gov-card p-5 sm:p-6">
-            <SectionHeader title="SES STATUS DISTRIBUTION" accentColor="#16A34A" />
+            <SectionHeader title="R&R ELIGIBILITY DISTRIBUTION" accentColor="#16A34A" subtitle="Family eligibility breakdown" />
             <div className="relative w-full" style={{ height: 280 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={sesDonutData}
+                    data={rrDonutData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={70}
-                    outerRadius={105}
+                    innerRadius={60}
+                    outerRadius={100}
                     paddingAngle={3}
                     dataKey="count"
                     nameKey="status"
-                    stroke="none"
+                    animationDuration={animationsEnabled ? 1200 : 0}
                   >
-                    {sesDonutData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={SES_COLORS[entry.status]} />
+                    {rrDonutData.map((entry) => (
+                      <Cell key={entry.status} fill={RR_COLORS[entry.status]} />
                     ))}
                   </Pie>
                   <Tooltip content={<SesDonutTooltip />} />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
-              {/* Center label */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <p className="counter-value text-2xl font-bold text-slate-900">{stats.totalFamilies.toLocaleString()}</p>
-                <p className="text-xs text-slate-400">Total Families</p>
-              </div>
-            </div>
-            {/* Donut Legend */}
-            <div className="flex items-center justify-center gap-4 mt-2">
-              {sesDonutData.map((entry) => (
-                <div key={entry.status} className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: SES_COLORS[entry.status] }} />
-                  <span className="text-xs text-slate-500">{entry.status.charAt(0) + entry.status.slice(1).toLowerCase()}</span>
-                  <span className="text-xs text-slate-400 font-medium counter-value">{entry.count.toLocaleString()}</span>
-                </div>
-              ))}
             </div>
           </div>
 
           {/* B) Mandal Comparison Bar Chart */}
           <div className="anim-in opacity-0 gov-card p-5 sm:p-6">
-            <SectionHeader title="MANDAL COMPARISON" accentColor="#0D9488" />
-            <div className="w-full" style={{ height: 280 }}>
+            <SectionHeader title="MANDAL COMPARISON" accentColor="#1E3A5F" subtitle="Families vs First Scheme Eligible" />
+            <div className="relative w-full" style={{ height: 280 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={mandalBarData}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={{ stroke: '#E2E8F0' }} tickLine={false} width={80} />
+                <BarChart data={mandalBarData} layout="vertical" margin={{ left: 20, right: 20, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
                   <Tooltip content={<MandalBarTooltip />} />
                   <Legend content={<MandalBarLegend />} />
                   <Bar dataKey="Family Count" fill="#1E3A5F" radius={[0, 4, 4, 0]} barSize={18} />
@@ -743,44 +719,51 @@ export default function DashboardView() {
             </div>
           </div>
         </div>
+        )}
 
-        {/* Recent Activity Section - Enhanced with alternating bg, thicker timeline, monospace time badge */}
-        <div className="anim-in opacity-0 gov-card p-5 sm:p-6">
+        {/* Recent Activity Section - Using real API data */}
+        {dashboardWidgets.activity && (
+        <div className="anim-in opacity-0 gov-card p-5 sm:p-6 section-reveal">
           <SectionHeader title="RECENT ACTIVITY" accentColor="#0D9488" />
           <div className="relative">
             {/* Timeline vertical line - thicker w-0.5 */}
             <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-slate-200" />
             <div className="space-y-0">
-              {RECENT_ACTIVITIES.map((activity, index) => {
-                const IconComp = activity.icon;
+              {recentActivities.length > 0 ? recentActivities.map((activity, index) => {
+                const config = ACTIVITY_TYPE_CONFIG[activity.type] || ACTIVITY_TYPE_CONFIG.STATUS;
+                const IconComp = config.icon;
                 return (
                   <div
                     key={activity.id}
-                    className={`relative flex items-start gap-4 pl-2 py-3 px-3 -ml-2 rounded-lg transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}`}
+                    className={`stagger-item relative flex items-start gap-4 pl-2 py-3 px-3 -ml-2 rounded-lg transition-colors ${index % 2 === 0 ? 'bg-white dark:bg-[#1E293B]' : 'bg-slate-50/70 dark:bg-slate-800/50'}`}
+                    style={{ animationDelay: `${index * 0.08}s` }}
                   >
                     {/* Timeline dot with icon */}
-                    <div className={`relative z-10 flex items-center justify-center w-[30px] h-[30px] rounded-full border ${activity.border} ${activity.bg} shrink-0`}>
-                      <IconComp className={`w-3.5 h-3.5 ${activity.color}`} />
+                    <div className={`relative z-10 flex items-center justify-center w-[30px] h-[30px] rounded-full border ${config.border} ${config.bg} shrink-0`}>
+                      <IconComp className={`w-3.5 h-3.5 ${config.color}`} />
                     </div>
                     {/* Content */}
                     <div className="flex-1 min-w-0 pt-1 flex items-start justify-between gap-3">
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">{activity.description}</p>
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{activity.description}</p>
                       {/* Monospace time badge */}
-                      <span className="shrink-0 text-[10px] text-slate-500 font-medium px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-md whitespace-nowrap" style={{ fontFamily: 'var(--font-jetbrains)' }}>{activity.time}</span>
+                      <span className="shrink-0 text-[10px] text-slate-500 dark:text-slate-400 font-medium px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md whitespace-nowrap" style={{ fontFamily: 'var(--font-jetbrains)' }}>{formatRelativeTime(activity.timestamp)}</span>
                     </div>
                   </div>
                 );
-              })}
+              }) : (
+                <div className="py-8 text-center text-sm text-slate-400">No recent activity</div>
+              )}
             </div>
           </div>
         </div>
+        )}
 
         {/* Plot Allotment - Enhanced with icon backgrounds, taller cards, more padding, gradient overlays */}
         <div className="anim-in opacity-0 gov-card p-5 sm:p-6">
           <SectionHeader title="PLOT ALLOTMENT STATUS" accentColor="#1E3A5F" />
           <div className="grid grid-cols-3 gap-4 sm:gap-5">
             {/* Pending - slate/neutral color */}
-            <div className="relative overflow-hidden text-center p-5 sm:p-6 bg-gradient-to-br from-slate-50 to-slate-100/70 rounded-xl border border-slate-200">
+            <div className="relative overflow-hidden text-center p-5 sm:p-6 bg-gradient-to-br from-slate-50 dark:from-slate-800 to-slate-100/70 dark:to-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
               {/* Icon background */}
               <div className="mx-auto mb-3 w-10 h-10 rounded-full bg-slate-200/60 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-slate-500" />

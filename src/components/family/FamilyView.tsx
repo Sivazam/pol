@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useAppStore } from '@/lib/store';
-import { SES_STATUS_CONFIG, ALLOTMENT_STATUS_CONFIG } from '@/lib/constants';
+import { RR_ELIGIBILITY_CONFIG, ALLOTMENT_STATUS_CONFIG } from '@/lib/constants';
 import CountUp from 'react-countup';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
@@ -12,7 +12,7 @@ import {
   Clock, Eye, User, Download, Printer, FileSpreadsheet,
   ShieldCheck, FileSearch, ShieldAlert, ShieldX,
   Search, Filter, X, ChevronsLeft, ChevronsRight,
-  RotateCcw, ArrowUpDown, Info,
+  RotateCcw, ArrowUpDown, Info, Heart, Bookmark,
 } from 'lucide-react';
 import ViewLayout from '@/components/shared/ViewLayout';
 
@@ -20,17 +20,15 @@ import ViewLayout from '@/components/shared/ViewLayout';
 
 interface FamilyMember {
   id: string;
-  name: string;
-  nameTelugu: string | null;
+  beneficiaryName: string;
   relation: string;
   age: number;
   gender: string;
-  aadhar: string | null;
+  aadharNo: string | null;
   occupation: string | null;
-  isMinor: boolean;
 }
 
-interface NewPlot {
+interface PlotAllotment {
   id: string;
   plotNumber: string | null;
   colonyName: string | null;
@@ -43,28 +41,28 @@ interface NewPlot {
 
 interface FamilyData {
   id: string;
-  pdfNumber: string;
-  headName: string;
-  headNameTelugu: string;
+  pdfId: string;
+  beneficiaryName: string;
   caste: string | null;
   landAcres: number | null;
   houseType: string | null;
-  sesStatus: string;
-  firstSchemeEligible: boolean;
+  rrEligibility: string;
+  hasFirstScheme: boolean;
+  createdAt: string;
   village: {
     id: string; name: string; nameTelugu: string; code: string;
     latitude: number; longitude: number;
     mandal: { id: string; name: string; nameTelugu: string; code: string; color: string; };
   };
   members: FamilyMember[];
-  newPlot: NewPlot | null;
+  plotAllotment: PlotAllotment | null;
 }
 
 interface RelatedFamily {
   id: string;
-  pdfNumber: string;
-  headName: string;
-  sesStatus: string;
+  pdfId: string;
+  beneficiaryName: string;
+  rrEligibility: string;
   villageName?: string;
 }
 
@@ -72,17 +70,18 @@ interface RelatedFamily {
 
 interface FamilyListItem {
   id: string;
-  pdfNumber: string;
-  headName: string;
-  headNameTelugu: string;
-  sesStatus: string;
-  firstSchemeEligible: boolean;
+  pdfId: string;
+  beneficiaryName: string;
+  rrEligibility: string;
+  hasFirstScheme: boolean;
   memberCount: number;
   villageName: string;
   mandalName: string;
   mandalCode: string;
   mandalColor: string;
-  plotStatus: string;
+  plotAllotment: {
+    allotmentStatus: string;
+  } | null;
   landAcres: number | null;
   houseType: string | null;
   caste: string | null;
@@ -98,31 +97,50 @@ interface MandalOption {
 // ─── Constants ──────────────────────────────────────────────────
 
 const TIMELINE_STEPS = [
-  { key: 'SURVEYED', label: 'Surveyed', icon: FileText, date: 'Jan 2024', stepNum: 1 },
-  { key: 'VERIFIED', label: 'Verified', icon: CheckCircle2, date: 'Mar 2024', stepNum: 2 },
-  { key: 'APPROVED', label: 'Approved', icon: Star, date: 'Jun 2024', stepNum: 3 },
-  { key: 'RELOCATED', label: 'Relocated', icon: Home, date: 'Sep 2024', stepNum: 4 },
+  { key: 'Eligible', label: 'R&R Eligible', icon: ShieldCheck, stepNum: 1 },
+  { key: 'FIRST_SCHEME', label: 'First Scheme', icon: Star, stepNum: 2 },
+  { key: 'PLOT_ALLOTTED', label: 'Plot Allotted', icon: LandPlot, stepNum: 3 },
+  { key: 'RELOCATED', label: 'Relocated', icon: Home, stepNum: 4 },
 ];
 
-const SES_STATUS_ICONS: Record<string, React.ElementType> = {
-  APPROVED: ShieldCheck,
-  VERIFIED: FileSearch,
-  SURVEYED: FileText,
-  REJECTED: ShieldX,
+/**
+ * Compute timeline dates based on the family's createdAt and current R&R eligibility.
+ * Since we don't have actual timestamps for each status transition, we derive
+ * approximate dates: Assessed = createdAt, subsequent steps offset by ~2 months each.
+ */
+function getTimelineDates(createdAt: string, rrEligibility: string): Record<string, string> {
+  const created = new Date(createdAt);
+  const formatDate = (d: Date) => d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  const offsets: Record<string, number> = { Eligible: 0, FIRST_SCHEME: 2, PLOT_ALLOTTED: 4, RELOCATED: 6 };
+  const dates: Record<string, string> = {};
+  const timelinePos = getTimelinePosition(rrEligibility);
+  for (const step of TIMELINE_STEPS) {
+    const stepIndex = step.stepNum - 1;
+    if (stepIndex <= timelinePos && timelinePos >= 0) {
+      // Completed or current step — show a calculated date
+      const d = new Date(created);
+      d.setMonth(d.getMonth() + (offsets[step.key] || 0));
+      dates[step.key] = formatDate(d);
+    } else {
+      dates[step.key] = '';
+    }
+  }
+  return dates;
+}
+
+const RR_ELIGIBILITY_ICONS: Record<string, React.ElementType> = {
+  Eligible: ShieldCheck,
+  Ineligible: ShieldX,
 };
 
-const SES_STATUS_BORDER: Record<string, string> = {
-  APPROVED: 'border-l-green-500',
-  VERIFIED: 'border-l-amber-500',
-  SURVEYED: 'border-l-slate-400',
-  REJECTED: 'border-l-red-500',
+const RR_ELIGIBILITY_BORDER: Record<string, string> = {
+  Eligible: 'border-l-green-500',
+  Ineligible: 'border-l-red-500',
 };
 
 const STATUS_BORDER_COLORS: Record<string, string> = {
-  APPROVED: 'border-l-green-600',
-  VERIFIED: 'border-l-amber-500',
-  SURVEYED: 'border-l-slate-400',
-  REJECTED: 'border-l-red-600',
+  Eligible: 'border-l-green-600',
+  Ineligible: 'border-l-red-600',
 };
 
 const QUICK_STAT_CONFIGS = [
@@ -132,12 +150,10 @@ const QUICK_STAT_CONFIGS = [
   { key: 'plot', icon: Home, iconColor: 'text-green-600', circleBg: 'bg-green-100', gradient: 'from-green-50/50 to-white', topBorder: 'border-t-green-400' },
 ];
 
-function getTimelinePosition(sesStatus: string): number {
-  switch (sesStatus) {
-    case 'SURVEYED': return 0;
-    case 'VERIFIED': return 1;
-    case 'APPROVED': return 2;
-    case 'REJECTED': return -1;
+function getTimelinePosition(rrEligibility: string): number {
+  switch (rrEligibility) {
+    case 'Eligible': return 0;
+    case 'Ineligible': return -1;
     default: return 0;
   }
 }
@@ -148,19 +164,26 @@ function getTimelinePosition(sesStatus: string): number {
 
 function FamiliesListView() {
   const navigateToFamily = useAppStore((s) => s.navigateToFamily);
+  const compactMode = useAppStore((s) => s.compactMode);
+  const defaultPageSize = useAppStore((s) => s.defaultPageSize);
+  const defaultSortOrder = useAppStore((s) => s.defaultSortOrder);
+  const animationsEnabled = useAppStore((s) => s.animationsEnabled);
+  const bookmarkedFamilies = useAppStore((s) => s.bookmarkedFamilies);
+  const toggleBookmark = useAppStore((s) => s.toggleBookmark);
 
   const [families, setFamilies] = useState<FamilyListItem[]>([]);
   const [mandals, setMandals] = useState<MandalOption[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [sesStatus, setSesStatus] = useState('');
+  const [rrEligibilityFilter, setRrEligibilityFilter] = useState('');
   const [mandalId, setMandalId] = useState('');
-  const [sortBy, setSortBy] = useState('pdfNumber');
+  const [sortBy, setSortBy] = useState(defaultSortOrder);
   const [loading, setLoading] = useState(true);
   const [showInfoTooltip, setShowInfoTooltip] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const limit = 20;
+  const limit = defaultPageSize;
 
   // Fetch mandals for dropdown
   useEffect(() => {
@@ -184,7 +207,7 @@ function FamiliesListView() {
       limit: String(limit),
     });
     if (search) params.set('search', search);
-    if (sesStatus) params.set('sesStatus', sesStatus);
+    if (rrEligibilityFilter) params.set('rrEligibility', rrEligibilityFilter);
     if (mandalId) params.set('mandalId', mandalId);
     if (sortBy) params.set('sortBy', sortBy);
 
@@ -198,24 +221,24 @@ function FamiliesListView() {
       })
       .catch(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [page, search, sesStatus, mandalId, sortBy]);
+  }, [page, search, rrEligibilityFilter, mandalId, sortBy, limit]);
 
   // GSAP entrance animation
   useEffect(() => {
-    if (!loading && containerRef.current) {
+    if (!loading && containerRef.current && animationsEnabled) {
       const els = containerRef.current.querySelectorAll('.anim-in');
       gsap.fromTo(els, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power3.out' });
     }
-  }, [loading, page]);
+  }, [loading, page, animationsEnabled]);
 
   const totalPages = Math.ceil(total / limit);
-  const hasActiveFilters = search || sesStatus || mandalId;
+  const hasActiveFilters = search || rrEligibilityFilter || mandalId;
 
   const clearAllFilters = useCallback(() => {
     setSearch('');
-    setSesStatus('');
+    setRrEligibilityFilter('');
     setMandalId('');
-    setSortBy('pdfNumber');
+    setSortBy('pdfId');
     setPage(1);
     setLoading(true);
   }, []);
@@ -223,12 +246,28 @@ function FamiliesListView() {
   // Loading skeleton
   if (loading && families.length === 0) {
     return (
-      <div className="w-full min-h-screen bg-[#F0F4F8] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-2 border-slate-200 border-t-[#1E3A5F] rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Families</p>
+      <ViewLayout navTitle="ALL FAMILIES" navTitleColor="#FBBF24" accentDotColor="#D97706" maxWidth="max-w-7xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+          {/* Header skeleton */}
+          <div className="skeleton-pulse h-36 rounded-xl" />
+          {/* 4 stat card skeletons */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="skeleton-pulse h-28 rounded-xl" />
+            ))}
+          </div>
+          {/* Search bar skeleton */}
+          <div className="skeleton-pulse h-16 rounded-xl" />
+          {/* Summary bar skeleton */}
+          <div className="skeleton-pulse h-10 rounded-lg" />
+          {/* Grid of family card skeletons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1,2,3,4,5,6,7,8].map(i => (
+              <div key={i} className="skeleton-pulse h-52 rounded-xl" />
+            ))}
+          </div>
         </div>
-      </div>
+      </ViewLayout>
     );
   }
 
@@ -239,9 +278,9 @@ function FamiliesListView() {
       accentDotColor="#D97706"
       maxWidth="max-w-7xl"
     >
-      <div ref={containerRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div ref={containerRef} className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${compactMode ? 'py-3 space-y-3' : 'py-6 space-y-6'}`}>
         {/* ===== A. Header Card ===== */}
-        <div className="anim-in opacity-0 gov-card p-6 sm:p-8 relative overflow-hidden">
+        <div className={`anim-in opacity-0 gov-card ${compactMode ? 'p-4 sm:p-5' : 'p-6 sm:p-8'} relative overflow-hidden`}>
           <div
             className="absolute inset-0 opacity-[0.03] pointer-events-none"
             style={{
@@ -272,7 +311,7 @@ function FamiliesListView() {
               <div className="w-px h-12 bg-slate-200" />
               <div className="flex flex-col items-center">
                 <span className="counter-value text-3xl sm:text-4xl font-bold text-emerald-700">
-                  <CountUp end={families.filter(f => f.firstSchemeEligible).length} duration={1.2} separator="," />
+                  <CountUp end={families.filter(f => f.hasFirstScheme).length} duration={1.2} separator="," />
                 </span>
                 <span className="text-xs text-slate-400 mt-1 font-medium uppercase tracking-wider">First Scheme (This Page)</span>
               </div>
@@ -281,9 +320,31 @@ function FamiliesListView() {
         </div>
 
         {/* ===== B. Search & Filter Bar ===== */}
-        <div className="anim-in opacity-0 bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <div className={`anim-in opacity-0 bg-slate-50 border border-slate-200 rounded-xl ${compactMode ? 'p-3' : 'p-4'}`}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Filter & Search</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Filter & Search</span>
+              <button
+                onClick={() => { setShowFavoritesOnly(!showFavoritesOnly); setPage(1); }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-all ${
+                  showFavoritesOnly
+                    ? 'bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-400'
+                    : 'bg-white border-slate-200 text-slate-500 hover:border-amber-300 hover:text-amber-600 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-400 dark:hover:border-amber-600'
+                }`}
+              >
+                <Bookmark className={`w-3 h-3 ${showFavoritesOnly ? 'fill-amber-500' : ''}`} />
+                Favorites
+                {bookmarkedFamilies.length > 0 && (
+                  <span className={`ml-0.5 px-1.5 py-0 rounded-full text-[10px] font-bold ${
+                    showFavoritesOnly
+                      ? 'bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200'
+                      : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                  }`}>
+                    {bookmarkedFamilies.length}
+                  </span>
+                )}
+              </button>
+            </div>
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
@@ -303,7 +364,7 @@ function FamiliesListView() {
                 placeholder="Search by PDF number or family name..."
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1); setLoading(true); }}
-                className="w-full pl-10 pr-10 py-2.5 bg-white border border-[#CBD5E1] rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all shadow-sm"
+                className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-slate-800 border border-[#CBD5E1] dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all shadow-sm"
               />
               {search && (
                 <button
@@ -314,19 +375,17 @@ function FamiliesListView() {
                 </button>
               )}
             </div>
-            {/* SES Status filter */}
+            {/* R&R Eligibility filter */}
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <select
-                value={sesStatus}
-                onChange={e => { setSesStatus(e.target.value); setPage(1); setLoading(true); }}
-                className="pl-10 pr-8 py-2.5 bg-white border border-[#CBD5E1] rounded-lg text-sm text-slate-900 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all shadow-sm"
+                value={rrEligibilityFilter}
+                onChange={e => { setRrEligibilityFilter(e.target.value); setPage(1); setLoading(true); }}
+                className="pl-10 pr-8 py-2.5 bg-white dark:bg-slate-800 border border-[#CBD5E1] dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all shadow-sm"
               >
                 <option value="">All Status</option>
-                <option value="SURVEYED">Surveyed</option>
-                <option value="VERIFIED">Verified</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
+                <option value="Eligible">Eligible</option>
+                <option value="Ineligible">Ineligible</option>
               </select>
             </div>
             {/* Mandal filter */}
@@ -335,7 +394,7 @@ function FamiliesListView() {
               <select
                 value={mandalId}
                 onChange={e => { setMandalId(e.target.value); setPage(1); setLoading(true); }}
-                className="pl-10 pr-8 py-2.5 bg-white border border-[#CBD5E1] rounded-lg text-sm text-slate-900 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all shadow-sm"
+                className="pl-10 pr-8 py-2.5 bg-white dark:bg-slate-800 border border-[#CBD5E1] dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all shadow-sm"
               >
                 <option value="">All Mandals</option>
                 {mandals.map(m => (
@@ -349,11 +408,11 @@ function FamiliesListView() {
               <select
                 value={sortBy}
                 onChange={e => { setSortBy(e.target.value); setPage(1); setLoading(true); }}
-                className="pl-10 pr-8 py-2.5 bg-white border border-[#CBD5E1] rounded-lg text-sm text-slate-900 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all shadow-sm"
+                className="pl-10 pr-8 py-2.5 bg-white dark:bg-slate-800 border border-[#CBD5E1] dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F]/40 transition-all shadow-sm"
               >
-                <option value="pdfNumber">Sort by PDF Number</option>
-                <option value="headName">Sort by Name</option>
-                <option value="sesStatus">Sort by Status</option>
+                <option value="pdfId">Sort by PDF ID</option>
+                <option value="beneficiaryName">Sort by Name</option>
+                <option value="rrEligibility">Sort by R&R Eligibility</option>
               </select>
             </div>
           </div>
@@ -381,17 +440,17 @@ function FamiliesListView() {
               )}
             </div>
           </div>
-          {(sesStatus || mandalId) && (
+          {(rrEligibilityFilter || mandalId) && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500">Filtered by:</span>
-              {sesStatus && (() => {
-                const cfg = SES_STATUS_CONFIG[sesStatus];
+              {rrEligibilityFilter && (() => {
+                const cfg = RR_ELIGIBILITY_CONFIG[rrEligibilityFilter];
                 return (
                   <button
-                    onClick={() => { setSesStatus(''); setPage(1); setLoading(true); }}
+                    onClick={() => { setRrEligibilityFilter(''); setPage(1); setLoading(true); }}
                     className={`text-xs font-medium px-2 py-0.5 rounded border ${cfg?.color || ''} ${cfg?.bg || ''} ${cfg?.border || ''} hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-1`}
                   >
-                    {cfg?.label || sesStatus}
+                    {cfg?.label || rrEligibilityFilter}
                     <X className="w-2.5 h-2.5" />
                   </button>
                 );
@@ -416,16 +475,17 @@ function FamiliesListView() {
         <motion.div
           variants={{
             hidden: {},
-            visible: { transition: { staggerChildren: 0.04 } },
+            visible: { transition: { staggerChildren: animationsEnabled ? 0.04 : 0 } },
           }}
           initial="hidden"
           animate="visible"
-          key={page}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+          key={`${page}-${showFavoritesOnly}`}
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${compactMode ? 'gap-3' : 'gap-4'}`}
         >
-          {families.map((f) => {
-            const statusCfg = SES_STATUS_CONFIG[f.sesStatus] || SES_STATUS_CONFIG.SURVEYED;
-            const borderColor = STATUS_BORDER_COLORS[f.sesStatus] || 'border-l-slate-300';
+          {(showFavoritesOnly ? families.filter((f) => bookmarkedFamilies.includes(f.id)) : families).map((f) => {
+            const statusCfg = RR_ELIGIBILITY_CONFIG[f.rrEligibility] || RR_ELIGIBILITY_CONFIG.Eligible;
+            const borderColor = STATUS_BORDER_COLORS[f.rrEligibility] || 'border-l-slate-300';
+            const isBookmarked = bookmarkedFamilies.includes(f.id);
             return (
               <motion.div
                 key={f.id}
@@ -433,30 +493,42 @@ function FamiliesListView() {
                   hidden: { opacity: 0, y: 20 },
                   visible: { opacity: 1, y: 0 },
                 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className={`gov-card p-4 cursor-pointer group border-l-4 ${borderColor} hover:scale-[1.01] transition-all duration-200 relative overflow-hidden`}
-                onClick={() => navigateToFamily(f.pdfNumber, f.id)}
+                transition={{ duration: animationsEnabled ? 0.3 : 0, ease: 'easeOut' }}
+                className={`gov-card ${compactMode ? 'p-3' : 'p-4'} cursor-pointer group border-l-4 ${borderColor} hover:scale-[1.01] transition-all duration-200 relative overflow-hidden`}
+                onClick={() => navigateToFamily(f.pdfId, f.id)}
               >
                 {/* Subtle background gradient on hover */}
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-50/0 via-transparent to-slate-100/0 group-hover:from-slate-50/50 group-hover:to-amber-50/30 transition-all duration-300 pointer-events-none" />
 
                 <div className="relative z-[1]">
-                  {/* PDF Badge */}
+                  {/* PDF Badge + Bookmark */}
                   <div className="flex items-center justify-between mb-3">
                     <span className="gov-badge px-2.5 py-1 rounded-md border bg-amber-50 border-amber-300 text-amber-700 tracking-widest flex items-center gap-1.5 text-xs">
                       <FileText className="w-3 h-3" />
-                      {f.pdfNumber}
+                      {f.pdfId}
                     </span>
-                    {f.firstSchemeEligible && (
-                      <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                    )}
+                    <div className="flex items-center gap-1">
+                      {f.hasFirstScheme && (
+                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleBookmark(f.id); }}
+                        className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
+                          isBookmarked
+                            ? 'text-red-500 hover:text-red-600 bg-red-50 dark:bg-red-900/20'
+                            : 'text-slate-300 hover:text-red-400 hover:bg-red-50 dark:text-slate-600 dark:hover:text-red-400 dark:hover:bg-red-900/20'
+                        }`}
+                        aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-red-500' : ''}`} />
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Family Head Name */}
+                  {/* Beneficiary Name */}
                   <p className="text-sm font-medium text-slate-900 leading-snug">
-                    {f.headName}
+                    {f.beneficiaryName}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{f.headNameTelugu}</p>
 
                   {/* Village Name */}
                   <div className="mt-2 flex items-center gap-1.5">
@@ -527,6 +599,23 @@ function FamiliesListView() {
             </div>
           </div>
         )}
+        {/* Favorites-only empty state */}
+        {showFavoritesOnly && families.filter((f) => bookmarkedFamilies.includes(f.id)).length === 0 && families.length > 0 && (
+          <div className="gov-card p-8 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
+                <Bookmark className="w-6 h-6 text-amber-300" />
+              </div>
+              <p className="text-slate-500 text-sm">No bookmarked families on this page</p>
+              <button
+                onClick={() => setShowFavoritesOnly(false)}
+                className="text-xs text-[#D97706] hover:underline font-medium"
+              >
+                Show all families
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ===== E. Pagination ===== */}
         {totalPages > 1 && (
@@ -583,18 +672,72 @@ function FamilyDetailView() {
   const navigateToMember = useAppStore((s) => s.navigateToMember);
   const navigateToRelocation = useAppStore((s) => s.navigateToRelocation);
   const navigateToFamily = useAppStore((s) => s.navigateToFamily);
+  const animationsEnabled = useAppStore((s) => s.animationsEnabled);
+  const compactMode = useAppStore((s) => s.compactMode);
+  const bookmarkedFamilies = useAppStore((s) => s.bookmarkedFamilies);
+  const toggleBookmark = useAppStore((s) => s.toggleBookmark);
+  const selectedFamilyId = useAppStore((s) => s.selectedFamilyId);
 
   const [family, setFamily] = useState<FamilyData | null>(null);
   const [relatedFamilies, setRelatedFamilies] = useState<RelatedFamily[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!selectedFamilyPdf) return;
-    fetch(`/api/family/${encodeURIComponent(selectedFamilyPdf)}`)
-      .then(r => r.json())
-      .then(data => { setFamily(data); setLoading(false); })
-      .catch(() => setLoading(false));
+    if (!selectedFamilyPdf) {
+      setFamily(null);
+      setErrorMessage('No family selected');
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadFamily = async () => {
+      try {
+        setLoading(true);
+        setErrorMessage(null);
+
+        const response = await fetch(`/api/family/${encodeURIComponent(selectedFamilyPdf)}`);
+        const data = await response.json();
+
+        if (cancelled) return;
+
+        if (!response.ok) {
+          setFamily(null);
+          setErrorMessage(typeof data?.error === 'string' ? data.error : 'Failed to fetch family details');
+          return;
+        }
+
+        if (!data?.id || !data?.pdfId || !data?.village?.id || !data?.village?.mandal?.name) {
+          setFamily(null);
+          setErrorMessage('Family details are incomplete');
+          return;
+        }
+
+        setFamily({
+          ...data,
+          hasFirstScheme: !!data.firstScheme,
+          landAcres: data.firstScheme?.extentOfLandAcCts ?? null,
+        });
+      } catch {
+        if (!cancelled) {
+          setFamily(null);
+          setErrorMessage('Failed to fetch family details');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadFamily();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedFamilyPdf]);
 
   // Fetch related families from the same village
@@ -604,28 +747,33 @@ function FamilyDetailView() {
       .then(r => r.json())
       .then(data => {
         const allFamilies: RelatedFamily[] = (data.families || [])
-          .filter((f: any) => f.pdfNumber !== family.pdfNumber)
+          .filter((f: any) => f.pdfId !== family.pdfId)
           .map((f: any) => ({
             id: f.id,
-            pdfNumber: f.pdfNumber,
-            headName: f.headName,
-            sesStatus: f.sesStatus,
+            pdfId: f.pdfId,
+            beneficiaryName: f.beneficiaryName,
+            rrEligibility: f.rrEligibility,
             villageName: family.village.name,
           }));
         const shuffled = allFamilies.sort(() => 0.5 - Math.random());
         setRelatedFamilies(shuffled.slice(0, 3));
       })
       .catch(() => {});
-  }, [family?.village?.id, family?.pdfNumber, family?.village?.name]);
+  }, [family?.village?.id, family?.pdfId, family?.village?.name]);
 
   useEffect(() => {
-    if (!loading && containerRef.current) {
+    if (!loading && containerRef.current && animationsEnabled) {
       const els = containerRef.current.querySelectorAll('.anim-in');
       gsap.fromTo(els, { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'power3.out' });
     }
-  }, [loading]);
+  }, [loading, animationsEnabled]);
 
   const handlePrint = () => { window.print(); };
+
+  const handlePDFReport = () => {
+    if (!family) return;
+    window.open(`/api/family/${encodeURIComponent(family.pdfId)}/pdf`, '_blank');
+  };
 
   const handleDownload = () => {
     if (!family) return;
@@ -634,7 +782,7 @@ function FamilyDetailView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${family.pdfNumber}-data.json`;
+    a.download = `${family.pdfId}-data.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -642,13 +790,13 @@ function FamilyDetailView() {
   const handleDownloadCSV = () => {
     if (!family) return;
     const headers = ['Name', 'Relation', 'Age', 'Gender', 'Aadhaar', 'Occupation'];
-    const rows = family.members.map(m => [m.name, m.relation, m.age, m.gender, m.aadhar || 'N/A', m.occupation || 'N/A']);
+    const rows = family.members.map(m => [m.beneficiaryName, m.relation, m.age, m.gender, m.aadharNo || 'N/A', m.occupation || 'N/A']);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${family.pdfNumber}-members.csv`;
+    a.download = `${family.pdfId}-members.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -656,10 +804,21 @@ function FamilyDetailView() {
   if (loading) {
     return (
       <ViewLayout navTitle="FAMILY DETAILS" navTitleColor="#FBBF24" accentDotColor="#D97706" maxWidth="max-w-5xl">
-        <div className="flex items-center justify-center py-24">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-2 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
-            <p className="text-slate-400 text-sm tracking-widest uppercase" style={{ fontFamily: 'var(--font-jetbrains)' }}>Loading Family</p>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          {/* Header skeleton */}
+          <div className="skeleton-pulse h-32 rounded-xl" />
+          {/* Quick stats skeleton */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="skeleton-pulse h-20 rounded-lg" />
+            ))}
+          </div>
+          {/* Timeline skeleton */}
+          <div className="skeleton-pulse h-28 rounded-xl" />
+          {/* Details skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="skeleton-pulse h-64 rounded-xl" />
+            <div className="skeleton-pulse h-64 rounded-xl" />
           </div>
         </div>
       </ViewLayout>
@@ -670,28 +829,29 @@ function FamilyDetailView() {
     return (
       <ViewLayout navTitle="FAMILY DETAILS" navTitleColor="#FBBF24" accentDotColor="#D97706" maxWidth="max-w-5xl">
         <div className="flex items-center justify-center py-24">
-          <p className="text-red-600 font-medium">Family not found</p>
+          <p className="text-red-600 font-medium">{errorMessage || 'Family not found'}</p>
         </div>
       </ViewLayout>
     );
   }
 
-  const accentColor = family.village.mandal.color;
-  const statusCfg = SES_STATUS_CONFIG[family.sesStatus] || SES_STATUS_CONFIG.SURVEYED;
-  const timelinePos = getTimelinePosition(family.sesStatus);
-  const isRejected = family.sesStatus === 'REJECTED';
-  const StatusIcon = SES_STATUS_ICONS[family.sesStatus] || FileText;
+  const accentColor = family.village?.mandal?.color || '#D97706';
+  const statusCfg = RR_ELIGIBILITY_CONFIG[family.rrEligibility] || RR_ELIGIBILITY_CONFIG.Eligible;
+  const timelinePos = getTimelinePosition(family.rrEligibility);
+  const timelineDates = getTimelineDates(family.createdAt, family.rrEligibility);
+  const isIneligible = family.rrEligibility === 'Ineligible';
+  const StatusIcon = RR_ELIGIBILITY_ICONS[family.rrEligibility] || FileText;
 
   return (
     <ViewLayout
-      navTitle={family.pdfNumber}
+      navTitle={family.pdfId}
       navTitleColor="#FBBF24"
       accentDotColor={accentColor}
       maxWidth="max-w-5xl"
     >
       <div ref={containerRef} className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* ===== A. Header Card ===== */}
-        <div className="anim-in opacity-0 gov-card p-6 border-l-[6px] border-l-[#D97706] relative overflow-hidden">
+        <div className={`anim-in opacity-0 gov-card ${compactMode ? 'p-4' : 'p-6'} border-l-[6px] border-l-[#D97706] relative overflow-hidden`}>
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D97706] via-[#1E3A5F] to-[#D97706] opacity-30" />
 
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 relative z-[1]">
@@ -699,16 +859,15 @@ function FamilyDetailView() {
               <div className="flex items-center gap-3 mb-2">
                 <span className="gov-badge px-3 py-1.5 rounded-md border bg-amber-50 border-amber-300 text-amber-700 tracking-widest text-sm font-semibold flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5" />
-                  Family #{family.pdfNumber}
+                  Family #{family.pdfId}
                 </span>
-                {family.firstSchemeEligible && (
+                {family.hasFirstScheme && (
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-amber-700 bg-amber-50 border border-amber-300">
                     <Star className="w-3 h-3 fill-amber-600 text-amber-600" /> First Scheme Eligible
                   </span>
                 )}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{family.headName}</h1>
-              <p className="text-slate-500 mt-1">{family.headNameTelugu}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{family.beneficiaryName}</h1>
 
               <div className="flex items-center gap-2 mt-3">
                 <span
@@ -716,7 +875,7 @@ function FamilyDetailView() {
                   style={{ backgroundColor: accentColor }}
                 >
                   <MapPin className="w-3 h-3" />
-                  {family.village.mandal.name} Mandal
+                  {family.village?.mandal?.name || 'Unknown'} Mandal
                 </span>
                 <ChevronRight className="w-3 h-3 text-slate-300" />
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
@@ -725,9 +884,23 @@ function FamilyDetailView() {
                 </span>
               </div>
             </div>
-            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border ${statusCfg.color} ${statusCfg.bg} ${statusCfg.border}`}>
-              <StatusIcon className="w-5 h-5" />
-              <span className="text-sm font-bold">{statusCfg.label}</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => toggleBookmark(selectedFamilyId || family.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-all text-sm font-medium ${
+                  bookmarkedFamilies.includes(selectedFamilyId || family.id)
+                    ? 'text-red-600 bg-red-50 border-red-200 hover:bg-red-100 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800 dark:hover:bg-red-900/30'
+                    : 'text-slate-500 bg-white border-slate-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200 dark:text-slate-400 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-800'
+                }`}
+                aria-label={bookmarkedFamilies.includes(selectedFamilyId || family.id) ? 'Remove bookmark' : 'Add bookmark'}
+              >
+                <Heart className={`w-4 h-4 ${bookmarkedFamilies.includes(selectedFamilyId || family.id) ? 'fill-red-500' : ''}`} />
+                {bookmarkedFamilies.includes(selectedFamilyId || family.id) ? 'Bookmarked' : 'Bookmark'}
+              </button>
+              <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border ${statusCfg.color} ${statusCfg.bg} ${statusCfg.border}`}>
+                <StatusIcon className="w-5 h-5" />
+                <span className="text-sm font-bold">{statusCfg.label}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -736,9 +909,9 @@ function FamilyDetailView() {
         <div className="anim-in opacity-0 grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { ...QUICK_STAT_CONFIGS[0], value: family.members.length, label: 'Members' },
-            { ...QUICK_STAT_CONFIGS[1], value: family.members.filter(m => m.isMinor).length, label: 'Minors' },
+            { ...QUICK_STAT_CONFIGS[1], value: family.members.filter(m => m.age < 18).length, label: 'Minors' },
             { ...QUICK_STAT_CONFIGS[2], value: `${family.landAcres || 0} acres`, label: 'Land' },
-            { ...QUICK_STAT_CONFIGS[3], value: family.newPlot ? family.newPlot.allotmentStatus : 'Not Allotted', label: 'Plot' },
+            { ...QUICK_STAT_CONFIGS[3], value: family.plotAllotment ? family.plotAllotment.allotmentStatus : 'Not Allotted', label: 'Plot' },
           ].map((stat, i) => (
             <div key={i} className={`flex items-center gap-3 bg-gradient-to-br ${stat.gradient} border border-slate-200 border-t-2 ${stat.topBorder} rounded-lg px-4 py-3.5`}>
               <div className={`w-10 h-10 rounded-full ${stat.circleBg} flex items-center justify-center`}>
@@ -758,9 +931,9 @@ function FamilyDetailView() {
           <div className="relative">
             <div className="flex items-center justify-between">
               {TIMELINE_STEPS.map((step, i) => {
-                const isCompleted = !isRejected && i <= timelinePos;
-                const isCurrent = !isRejected && i === timelinePos;
-                const isFuture = !isRejected && i > timelinePos;
+                const isCompleted = !isIneligible && i <= timelinePos;
+                const isCurrent = !isIneligible && i === timelinePos;
+                const isFuture = !isIneligible && i > timelinePos;
                 const Icon = step.icon;
                 return (
                   <div key={step.key} className="flex flex-col items-center relative z-10">
@@ -792,7 +965,7 @@ function FamilyDetailView() {
                     <span className={`text-[10px] mt-0.5 ${
                       isCompleted || isCurrent ? 'text-slate-500' : 'text-slate-300'
                     }`}>
-                      {step.date}
+                      {timelineDates[step.key] || (isFuture ? '—' : '')}
                     </span>
                     {isFuture && (
                       <span className="text-[9px] mt-1 text-slate-300 font-medium uppercase tracking-wider">Pending</span>
@@ -803,16 +976,16 @@ function FamilyDetailView() {
             </div>
             {/* Progress line */}
             <div className="absolute top-[22px] left-0 right-0 h-0.5 -z-0 flex">
-              {!isRejected && timelinePos > 0 && (
+              {!isIneligible && timelinePos > 0 && (
                 <div className="h-full bg-green-600" style={{ width: `${(timelinePos / 3) * 100}%` }} />
               )}
-              {!isRejected && (
+              {!isIneligible && (
                 <div className="h-full border-t-2 border-dashed border-slate-300" style={{ width: `${((3 - timelinePos) / 3) * 100}%` }} />
               )}
-              {isRejected && <div className="h-full bg-red-500 w-full" />}
+              {isIneligible && <div className="h-full bg-red-500 w-full" />}
             </div>
           </div>
-          {!isRejected && timelinePos >= 0 && (
+          {!isIneligible && timelinePos >= 0 && (
             <div className="flex justify-center mt-4">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -820,9 +993,9 @@ function FamilyDetailView() {
               </span>
             </div>
           )}
-          {isRejected && (
+          {isIneligible && (
             <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-              <p className="text-xs text-red-700 font-medium">Application rejected — review required</p>
+              <p className="text-xs text-red-700 font-medium">Family is ineligible — review required</p>
             </div>
           )}
         </div>
@@ -853,13 +1026,13 @@ function FamilyDetailView() {
             <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4 flex items-center gap-2">
               <Home className="w-4 h-4 text-[#0F2B46]" />NEW PLOT STATUS
             </h3>
-            {family.newPlot ? (
+            {family.plotAllotment ? (
               <div className="space-y-0">
                 {[
-                  { label: 'Plot Number', value: family.newPlot.plotNumber || 'Pending', icon: LandPlot },
-                  { label: 'Colony', value: family.newPlot.colonyName || 'Pending', icon: Home },
-                  { label: 'Area', value: family.newPlot.areaSqYards ? `${family.newPlot.areaSqYards} sq. yards` : 'Pending', icon: LandPlot },
-                  { label: 'Allotment Status', value: family.newPlot.allotmentStatus, icon: Clock },
+                  { label: 'Plot Number', value: family.plotAllotment.plotNumber || 'Pending', icon: LandPlot },
+                  { label: 'Colony', value: family.plotAllotment.colonyName || 'Pending', icon: Home },
+                  { label: 'Area', value: family.plotAllotment.areaSqYards ? `${family.plotAllotment.areaSqYards} sq. yards` : 'Pending', icon: LandPlot },
+                  { label: 'Allotment Status', value: family.plotAllotment.allotmentStatus, icon: Clock },
                 ].map((item, i) => {
                   const allotCfg = i === 3 ? ALLOTMENT_STATUS_CONFIG[item.value] : null;
                   return (
@@ -919,11 +1092,10 @@ function FamilyDetailView() {
                     <td className="py-3 px-2">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-amber-100 text-amber-700">
-                          {m.name.charAt(0)}
+                          {m.beneficiaryName.charAt(0)}
                         </div>
                         <div>
-                          <p className="text-slate-900 text-sm font-medium">{m.name}</p>
-                          {m.nameTelugu && <p className="text-slate-400 text-xs">{m.nameTelugu}</p>}
+                          <p className="text-slate-900 text-sm font-medium">{m.beneficiaryName}</p>
                         </div>
                       </div>
                     </td>
@@ -934,7 +1106,7 @@ function FamilyDetailView() {
                         {m.relation}
                       </span>
                     </td>
-                    <td className="py-3 px-2 text-slate-700">{m.age}{m.isMinor ? ' (Minor)' : ''}</td>
+                    <td className="py-3 px-2 text-slate-700">{m.age}{m.age < 18 ? ' (Minor)' : ''}</td>
                     <td className="py-3 px-2 hidden md:table-cell">
                       <span className="text-slate-500 flex items-center gap-1">
                         {m.gender === 'Male' ? <span className="text-blue-500">♂</span> : m.gender === 'Female' ? <span className="text-pink-500">♀</span> : null}
@@ -942,7 +1114,7 @@ function FamilyDetailView() {
                       </span>
                     </td>
                     <td className="py-3 px-2 hidden lg:table-cell">
-                      <span className="gov-badge text-slate-400">{m.aadhar || 'N/A'}</span>
+                      <span className="gov-badge text-slate-400">{m.aadharNo || 'N/A'}</span>
                     </td>
                     <td className="py-3 px-2 hidden md:table-cell text-slate-500">{m.occupation || 'N/A'}</td>
                     <td className="py-3 px-2 text-right">
@@ -960,7 +1132,7 @@ function FamilyDetailView() {
 
         {/* ===== F. Action Bar ===== */}
         <div className="anim-in opacity-0 flex flex-wrap gap-3 no-print">
-          {family.newPlot && (
+          {family.plotAllotment && (
             <button
               onClick={() => navigateToRelocation(family.id)}
               className="flex items-center gap-2.5 px-6 py-3 bg-white border border-green-300 text-green-700 rounded-lg text-sm font-medium hover:bg-green-50 hover:shadow-md transition-all shadow-sm"
@@ -999,6 +1171,15 @@ function FamilyDetailView() {
             </div>
             Print SES Sheet
           </button>
+          <button
+            onClick={handlePDFReport}
+            className="flex items-center gap-2.5 px-6 py-3 bg-white border border-red-300 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50 hover:shadow-md transition-all shadow-sm"
+          >
+            <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center">
+              <FileText className="w-3.5 h-3.5 text-red-600" />
+            </div>
+            PDF Report
+          </button>
         </div>
 
         {/* ===== G. Related Families ===== */}
@@ -1007,17 +1188,17 @@ function FamilyDetailView() {
             <h3 className="text-sm font-semibold text-slate-900 tracking-wide mb-4">NEARBY FAMILIES</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {relatedFamilies.map((rf) => {
-                const rfStatusCfg = SES_STATUS_CONFIG[rf.sesStatus] || SES_STATUS_CONFIG.SURVEYED;
-                const rfBorderClass = SES_STATUS_BORDER[rf.sesStatus] || 'border-l-slate-300';
+                const rfStatusCfg = RR_ELIGIBILITY_CONFIG[rf.rrEligibility] || RR_ELIGIBILITY_CONFIG.Eligible;
+                const rfBorderClass = RR_ELIGIBILITY_BORDER[rf.rrEligibility] || 'border-l-slate-300';
                 return (
                   <button
                     key={rf.id}
-                    onClick={() => navigateToFamily(rf.pdfNumber, rf.id)}
+                    onClick={() => navigateToFamily(rf.pdfId, rf.id)}
                     className={`flex items-start gap-3 p-4 bg-slate-50 border border-slate-200 border-l-4 ${rfBorderClass} rounded-lg hover:bg-slate-100 hover:border-slate-300 hover:shadow-sm transition-all text-left group`}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-mono font-semibold text-amber-700 tracking-wider">{rf.pdfNumber}</p>
-                      <p className="text-sm text-slate-900 font-medium truncate mt-0.5">{rf.headName}</p>
+                      <p className="text-xs font-mono font-semibold text-amber-700 tracking-wider">{rf.pdfId}</p>
+                      <p className="text-sm text-slate-900 font-medium truncate mt-0.5">{rf.beneficiaryName}</p>
                       {rf.villageName && (
                         <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
                           <MapPin className="w-2.5 h-2.5" />

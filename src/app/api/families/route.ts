@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20');
     const search = request.nextUrl.searchParams.get('search') || '';
-    const sesStatus = request.nextUrl.searchParams.get('sesStatus') || '';
-    const sortBy = request.nextUrl.searchParams.get('sortBy') || 'pdfNumber';
+    const rrEligibility = request.nextUrl.searchParams.get('rrEligibility') || '';
+    const sortBy = request.nextUrl.searchParams.get('sortBy') || 'pdfId';
     const sortDir = request.nextUrl.searchParams.get('sortDir') || 'asc';
     const all = request.nextUrl.searchParams.get('all') === 'true';
 
@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
     if (villageId) {
       where.villageId = villageId;
     } else if (mandalId) {
-      // Filter families by mandal through their village
       where.village = { mandalId };
     }
 
@@ -29,23 +28,21 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { pdfNumber: { contains: search } },
-        { headName: { contains: search } },
+        { pdfId: { contains: search } },
+        { beneficiaryName: { contains: search } },
       ];
     }
-    if (sesStatus) {
-      where.sesStatus = sesStatus;
+    if (rrEligibility) {
+      where.rrEligibility = rrEligibility;
     }
 
     // Determine sort order
     const sortDirection = sortDir === 'desc' ? 'desc' : 'asc';
-    let orderBy: any = { pdfNumber: sortDirection };
-    if (sortBy === 'headName') {
-      orderBy = { headName: sortDirection };
-    } else if (sortBy === 'sesStatus') {
-      orderBy = { sesStatus: sortDirection };
-    } else if (sortBy === 'landAcres') {
-      orderBy = { landAcres: sortDirection };
+    let orderBy: any = { pdfId: sortDirection };
+    if (sortBy === 'beneficiaryName') {
+      orderBy = { beneficiaryName: sortDirection };
+    } else if (sortBy === 'rrEligibility') {
+      orderBy = { rrEligibility: sortDirection };
     } else if (sortBy === 'memberCount') {
       orderBy = { members: { _count: sortDirection } };
     }
@@ -54,16 +51,17 @@ export async function GET(request: NextRequest) {
       db.family.findMany({
         where,
         select: {
-          id: true, pdfNumber: true, headName: true, headNameTelugu: true,
-          caste: true, landAcres: true, houseType: true, sesStatus: true,
-          firstSchemeEligible: true,
+          id: true, pdfId: true, beneficiaryName: true, gender: true,
+          caste: true, subCaste: true, houseType: true, rrEligibility: true,
+          occupation: true, bplApl: true, farmerCategory: true,
           village: {
             select: {
               id: true, name: true,
               mandal: { select: { id: true, name: true, code: true, color: true } },
             },
           },
-          newPlot: { select: { allotmentStatus: true } },
+          firstScheme: { select: { totalCompensation: true, extentOfLandAcCts: true } },
+          plotAllotment: { select: { allotmentStatus: true } },
           _count: { select: { members: true } },
         },
         orderBy,
@@ -75,20 +73,25 @@ export async function GET(request: NextRequest) {
 
     const result = families.map(f => ({
       id: f.id,
-      pdfNumber: f.pdfNumber,
-      headName: f.headName,
-      headNameTelugu: f.headNameTelugu,
+      pdfId: f.pdfId,
+      beneficiaryName: f.beneficiaryName,
+      gender: f.gender,
       caste: f.caste,
-      landAcres: f.landAcres,
+      subCaste: f.subCaste,
       houseType: f.houseType,
-      sesStatus: f.sesStatus,
-      firstSchemeEligible: f.firstSchemeEligible,
+      rrEligibility: f.rrEligibility,
+      occupation: f.occupation,
+      bplApl: f.bplApl,
+      farmerCategory: f.farmerCategory,
+      hasFirstScheme: !!f.firstScheme,
+      totalCompensation: f.firstScheme?.totalCompensation || null,
+      landAcres: f.firstScheme?.extentOfLandAcCts || null,
       memberCount: f._count.members,
       villageName: f.village.name,
       mandalName: f.village.mandal.name,
       mandalCode: f.village.mandal.code,
       mandalColor: f.village.mandal.color,
-      plotStatus: f.newPlot?.allotmentStatus || 'NOT_ALLOTTED',
+      plotStatus: f.plotAllotment?.allotmentStatus || 'NOT_ALLOTTED',
     }));
 
     return NextResponse.json({

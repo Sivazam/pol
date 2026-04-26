@@ -3,6 +3,9 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import QueryProvider from "@/lib/query-provider";
+import AuthSessionProvider from "@/components/auth/AuthSessionProvider";
+import SessionGate from "@/components/auth/SessionGate";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -30,12 +33,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#F0F4F8] text-[#0F172A]`}
+        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#F8FAFC] text-[#1A202C]`}
       >
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <AuthSessionProvider>
+          <QueryProvider>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+              <SessionGate />
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </QueryProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );
